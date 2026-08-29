@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">ScanFlow QR</string>
+    <string name="tagline">Scan. Create. Connect.</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_scan">Scan</string>
+    <string name="nav_create">Create</string>
+    <string name="nav_history">History</string>
+    <string name="nav_profile">Profile</string>
+    
+    <!-- Actions -->
+    <string name="action_scan_camera">Scan Camera</string>
+    <string name="action_scan_gallery">Scan Image</string>
+    <string name="action_create_qr">Create QR</string>
+    <string name="action_my_qr">My QR Codes</string>
+    <string name="action_favorites">Favorites</string>
+    <string name="action_share">Share</string>
+    <string name="action_export">Save Image</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_open_link">Open Link</string>
+    <string name="action_call">Call</string>
+    <string name="action_send_email">Send Email</string>
+    <string name="action_send_sms">Send SMS</string>
+    <string name="action_open_map">Open Map</string>
+    <string name="action_connect_wifi">Connect WiFi</string>
+    <string name="action_save_contact">Save Contact</string>
+    
+    <!-- Status & Alerts -->
+    <string name="status_secure">Secure URL</string>
+    <string name="status_suspicious">Suspicious / Caution</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
+    <string name="qr_saved_successfully">QR Code saved to gallery</string>
+    <string name="permission_camera_required">Camera permission is required to scan QR and barcodes.</string>
+    <string name="grant_permission">Grant Permission</string>
+</resources>

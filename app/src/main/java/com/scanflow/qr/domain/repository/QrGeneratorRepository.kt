@@ -1,0 +1,55 @@
+package com.scanflow.qr.domain.repository
+
+import android.graphics.Bitmap
+import android.net.Uri
+import com.scanflow.qr.domain.model.AppSettings
+import com.scanflow.qr.domain.model.AppThemeMode
+import com.scanflow.qr.domain.model.AuthUser
+import com.scanflow.qr.domain.model.QrStyleConfig
+import com.scanflow.qr.domain.model.SyncStatus
+import com.scanflow.qr.domain.model.UserQrCode
+import kotlinx.coroutines.flow.Flow
+
+interface QrGeneratorRepository {
+    fun generateQrBitmap(content: String, config: QrStyleConfig): Bitmap?
+    suspend fun saveUserQr(userQrCode: UserQrCode): Long
+    fun getAllUserQrs(): Flow<List<UserQrCode>>
+    fun getFavoriteUserQrs(): Flow<List<UserQrCode>>
+    suspend fun getUserQrById(id: Long): UserQrCode?
+    suspend fun toggleFavorite(id: Long, isFavorite: Boolean)
+    suspend fun incrementScanCount(id: Long)
+    suspend fun incrementShareCount(id: Long)
+    suspend fun incrementDownloadCount(id: Long)
+    suspend fun deleteUserQr(id: Long)
+    suspend fun exportQrToGallery(bitmap: Bitmap, title: String): Uri?
+    suspend fun cacheQrForSharing(bitmap: Bitmap, filename: String): Uri?
+}
+
+interface FavoriteRepository {
+    fun getAllFavoriteScans(): Flow<List<com.scanflow.qr.domain.model.ScanHistoryItem>>
+    fun getAllFavoriteCreatedQrs(): Flow<List<UserQrCode>>
+}
+
+interface SettingsRepository {
+    val settingsFlow: Flow<AppSettings>
+    suspend fun updateThemeMode(themeMode: AppThemeMode)
+    suspend fun updateVibrate(enabled: Boolean)
+    suspend fun updateBeep(enabled: Boolean)
+    suspend fun updateAutoOpen(enabled: Boolean)
+    suspend fun updateAutoCopy(enabled: Boolean)
+    suspend fun updateAppLock(enabled: Boolean)
+    suspend fun updateBiometric(enabled: Boolean)
+    suspend fun updatePinCode(pin: String?)
+    suspend fun setOnboardingCompleted(completed: Boolean)
+}
+
+interface AuthRepository {
+    fun getCurrentUser(): Flow<AuthUser>
+    suspend fun signInAsGuest(): AuthUser
+    suspend fun signOut()
+}
+
+interface SyncRepository {
+    fun getSyncStatus(): Flow<SyncStatus>
+    suspend fun requestSync()
+}

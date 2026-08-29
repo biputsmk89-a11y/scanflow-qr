@@ -1,0 +1,163 @@
+name: Android Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Release Version Name (e.g. 1.0.0)'
+        required: true
+        default: '1.0.0'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build Signed APK & AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle Executable
+        run: chmod +x ./gradlew
+
+      - name: Determine Version Name
+        id: version_step
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG_VERSION="${GITHUB_REF_NAME#v}"
+            echo "VERSION=${TAG_VERSION}" >> $GITHUB_ENV
+            echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+          else
+            INPUT_VER="${{ github.event.inputs.version_name }}"
+            echo "VERSION=${INPUT_VER}" >> $GITHUB_ENV
+            echo "RELEASE_TAG=v${INPUT_VER}" >> $GITHUB_ENV
+          fi
+
+      - name: Validate Signing Secrets Availability
+        run: |
+          if [ -z "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" ]; then
+            echo "::error::Missing required secret SIGNING_KEYSTORE_BASE64! Cannot perform release signing."
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
+            echo "::error::Missing required secret KEYSTORE_PASSWORD!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEY_ALIAS }}" ]; then
+            echo "::error::Missing required secret KEY_ALIAS!"
+            exit 1
+          fi
+          if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then
+            echo "::error::Missing required secret KEY_PASSWORD!"
+            exit 1
+          fi
+
+      - name: Decode Signing Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
+          echo "KEYSTORE_FILE=${RUNNER_TEMP}/release.keystore" >> $GITHUB_ENV
+
+      - name: Clean Project Build
+        run: ./gradlew clean --no-daemon
+
+      - name: Run Release Unit Tests
+        run: ./gradlew testReleaseUnitTest --no-daemon
+
+      - name: Build Release APK
+        env:
+          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Build Release Android App Bundle (AAB)
+        env:
+          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Verify and Rename Release Artifacts
+        run: |
+          APK_SRC="app/build/outputs/apk/release/app-release.apk"
+          AAB_SRC="app/build/outputs/bundle/release/app-release.aab"
+          
+          if [ ! -f "$APK_SRC" ] || [ ! -s "$APK_SRC" ]; then
+            echo "::error::Release APK was not generated or is 0 bytes!"
+            exit 1
+          fi
+          
+          if [ ! -f "$AAB_SRC" ] || [ ! -s "$AAB_SRC" ]; then
+            echo "::error::Release AAB was not generated or is 0 bytes!"
+            exit 1
+          fi
+          
+          APK_DEST="app/build/outputs/apk/release/ScanFlow-Qr-v${VERSION}-release.apk"
+          AAB_DEST="app/build/outputs/bundle/release/ScanFlow-Qr-v${VERSION}-release.aab"
+          
+          cp "$APK_SRC" "$APK_DEST"
+          cp "$AAB_SRC" "$AAB_DEST"
+          
+          echo "APK_FINAL_PATH=${APK_DEST}" >> $GITHUB_ENV
+          echo "AAB_FINAL_PATH=${AAB_DEST}" >> $GITHUB_ENV
+          
+          echo "=== Verified Artifacts ==="
+          ls -lh "$APK_DEST"
+          ls -lh "$AAB_DEST"
+
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanFlow-QR-APK
+          path: ${{ env.APK_FINAL_PATH }}
+          retention-days: 30
+
+      - name: Upload Release AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanFlow-QR-AAB
+          path: ${{ env.AAB_FINAL_PATH }}
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ScanFlow QR v${{ env.VERSION }}
+          files: |
+            ${{ env.APK_FINAL_PATH }}
+            ${{ env.AAB_FINAL_PATH }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+      - name: Cleanup Keystore
+        if: always()
+        run: |
+          if [ -f "${RUNNER_TEMP}/release.keystore" ]; then
+            rm -f "${RUNNER_TEMP}/release.keystore"
+            echo "Temporary release keystore securely removed."
+          fi

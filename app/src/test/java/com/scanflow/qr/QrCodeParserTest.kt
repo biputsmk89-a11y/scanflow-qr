@@ -1,0 +1,110 @@
+package com.scanflow.qr
+
+import com.google.common.truth.Truth.assertThat
+import com.scanflow.qr.core.utils.QrCodeParser
+import com.scanflow.qr.domain.model.QrType
+import org.junit.Test
+
+class QrCodeParserTest {
+
+    @Test
+    fun `parse url with https correctly classifies as WEBSITE`() {
+        val raw = "https://scanflow.app/download"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.WEBSITE)
+        assertThat(result.isSecure).isTrue()
+        assertThat(result.rawContent).isEqualTo("https://scanflow.app/download")
+    }
+
+    @Test
+    fun `parse url with http classifies as WEBSITE and flags security warning`() {
+        val raw = "http://insecure-site.org/login"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.WEBSITE)
+        assertThat(result.isSecure).isFalse()
+        assertThat(result.securityWarning).isNotNull()
+    }
+
+    @Test
+    fun `parse wifi payload correctly parses ssid and password`() {
+        val raw = "WIFI:T:WPA;S:MyOfficeWiFi;P:SecretPassword123;H:false;;"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.WIFI)
+        assertThat(result.displayDetails["Network (SSID)"]).isEqualTo("MyOfficeWiFi")
+        assertThat(result.displayDetails["Password"]).isEqualTo("SecretPassword123")
+        assertThat(result.displayDetails["Security"]).isEqualTo("WPA")
+    }
+
+    @Test
+    fun `parse vCard payload correctly parses contact info`() {
+        val raw = """
+            BEGIN:VCARD
+            VERSION:3.0
+            FN:Alice Smith
+            TEL:+1234567890
+            EMAIL:alice@example.com
+            ORG:ScanFlow Tech
+            END:VCARD
+        """.trimIndent()
+
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.CONTACT)
+        assertThat(result.title).isEqualTo("Alice Smith")
+        assertThat(result.displayDetails["Phone"]).isEqualTo("+1234567890")
+        assertThat(result.displayDetails["Email"]).isEqualTo("alice@example.com")
+        assertThat(result.displayDetails["Organization"]).isEqualTo("ScanFlow Tech")
+    }
+
+    @Test
+    fun `parse email with mailto schema correctly parses recipient`() {
+        val raw = "mailto:support@scanflow.app?subject=BugReport&body=AppDetails"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.EMAIL)
+        assertThat(result.displayDetails["Recipient"]).isEqualTo("support@scanflow.app")
+        assertThat(result.displayDetails["Subject"]).isEqualTo("BugReport")
+        assertThat(result.displayDetails["Message"]).isEqualTo("AppDetails")
+    }
+
+    @Test
+    fun `parse phone number correctly identifies PHONE type`() {
+        val raw = "tel:+628123456789"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.PHONE)
+        assertThat(result.displayDetails["Phone Number"]).isEqualTo("+628123456789")
+    }
+
+    @Test
+    fun `parse geo location coordinates correctly identifies LOCATION type`() {
+        val raw = "geo:-6.2088,106.8456"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.LOCATION)
+        assertThat(result.displayDetails["Latitude"]).isEqualTo("-6.2088")
+        assertThat(result.displayDetails["Longitude"]).isEqualTo("106.8456")
+    }
+
+    @Test
+    fun `parse barcode symbology correctly preserves format`() {
+        val raw = "8992761136015"
+        val result = QrCodeParser.parse(raw, format = "EAN_13")
+
+        assertThat(result.type).isEqualTo(QrType.BARCODE)
+        assertThat(result.format).isEqualTo("EAN_13")
+        assertThat(result.displayDetails["Code"]).isEqualTo("8992761136015")
+    }
+
+    @Test
+    fun `parse plain text fallback`() {
+        val raw = "Simple plain text memo without schema"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.TEXT)
+        assertThat(result.rawContent).isEqualTo(raw)
+    }
+}
