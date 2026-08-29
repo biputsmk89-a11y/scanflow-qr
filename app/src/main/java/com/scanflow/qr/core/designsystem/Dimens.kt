@@ -4,6 +4,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 object Dimens {
+    // Spacing Tokens
     val Spacing2: Dp = 2.dp
     val Spacing4: Dp = 4.dp
     val Spacing8: Dp = 8.dp
@@ -18,20 +19,29 @@ object Dimens {
     val Spacing56: Dp = 56.dp
     val Spacing64: Dp = 64.dp
 
-    val ScannerFrameSize: Dp = 260.dp
-
-    val IconSizeSmall: Dp = 16.dp
-    val IconSizeMedium: Dp = 24.dp
-    val IconSizeLarge: Dp = 32.dp
-    val IconSizeHero: Dp = 48.dp
-
+    // Component Dimensions
+    val MinTouchTarget: Dp = 48.dp
     val TouchTargetMin: Dp = 48.dp
+    val ScannerFrameSize: Dp = 260.dp
+    val QrPreviewCardSize: Dp = 240.dp
+    val ButtonHeight: Dp = 52.dp
+    val SmallButtonHeight: Dp = 40.dp
 
+    // Radius Tokens
+    val CornerRadiusCard: Dp = 20.dp
+    val CornerRadiusButton: Dp = 16.dp
     val RadiusSmall: Dp = 8.dp
     val RadiusMedium: Dp = 16.dp
     val RadiusLarge: Dp = 24.dp
     val RadiusXLarge: Dp = 32.dp
 
+    // Icon Sizes
+    val IconSizeSmall: Dp = 16.dp
+    val IconSizeMedium: Dp = 24.dp
+    val IconSizeLarge: Dp = 32.dp
+    val IconSizeHero: Dp = 48.dp
+
+    // Elevation Tokens
     val ElevationSmall: Dp = 2.dp
     val ElevationMedium: Dp = 4.dp
     val ElevationLarge: Dp = 8.dp
