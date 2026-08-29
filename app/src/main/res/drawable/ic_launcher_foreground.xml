@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- QR Corner Top Left -->
+    <path
+        android:fillColor="#0052FF"
+        android:pathData="M28,28h18v18h-18z"/>
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M32,32h10v10h-10z"/>
+    
+    <!-- QR Corner Top Right -->
+    <path
+        android:fillColor="#0052FF"
+        android:pathData="M62,28h18v18h-18z"/>
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M66,32h10v10h-10z"/>
+    
+    <!-- QR Corner Bottom Left -->
+    <path
+        android:fillColor="#0052FF"
+        android:pathData="M28,62h18v18h-18z"/>
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M32,66h10v10h-10z"/>
+    
+    <!-- QR Center & Data Dots -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M50,30h8v8h-8z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,50h8v8h-8z"/>
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M50,50h8v8h-8z"/>
+    <path
+        android:fillColor="#0052FF"
+        android:pathData="M70,50h8v8h-8z"/>
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M62,62h8v8h-8z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,72h8v8h-8z"/>
+    <path
+        android:fillColor="#0052FF"
+        android:pathData="M50,70h8v8h-8z"/>
+
+    <!-- Scanner Laser Beam Across Center -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M22,53h64v2h-64z"/>
+</vector>
