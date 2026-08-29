@@ -50,6 +50,7 @@ captures/
 # Keystore files & Secrets
 *.jks
 *.keystore
+release-keystore/
 keystore.properties
 secrets.properties
 .env
