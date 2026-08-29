@@ -100,6 +100,18 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
+    }
+
+    lint {
+        isAbortOnError = false
+        isCheckReleaseBuilds = false
+    }
 }
 
 dependencies {

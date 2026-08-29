@@ -1,8 +1,8 @@
 package com.scanflow.qr.core.security
 
-import android.net.Uri
 import com.scanflow.qr.domain.model.SecurityAssessment
 import com.scanflow.qr.domain.model.SecurityLevel
+import java.net.URI
 
 object UrlSecurityChecker {
 
@@ -23,9 +23,11 @@ object UrlSecurityChecker {
         val details = mutableListOf<String>()
 
         try {
-            val uri = Uri.parse(trimmed)
-            val scheme = uri.scheme?.lowercase()
-            val host = uri.host?.lowercase()
+            val schemeIndex = trimmed.indexOf(":")
+            val scheme = if (schemeIndex > 0) trimmed.substring(0, schemeIndex).lowercase() else ""
+
+            // Extract host safely without Android framework dependency
+            val host = extractHost(trimmed, scheme)
 
             if (scheme in dangerousSchemes) {
                 return SecurityAssessment(
@@ -47,11 +49,11 @@ object UrlSecurityChecker {
             } else if (scheme == "http") {
                 details.add("Unencrypted HTTP protocol. Data transmitted may be intercepted.")
                 isSuspicious = true
-            } else {
+            } else if (scheme.isNotEmpty()) {
                 details.add("Custom or non-standard protocol ($scheme).")
             }
 
-            if (host != null) {
+            if (!host.isNullOrEmpty()) {
                 // Check if host is raw IP address (e.g. 192.168.1.1 or 45.33.32.156)
                 val isIpAddress = host.matches(Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$"""))
                 if (isIpAddress) {
@@ -79,6 +81,7 @@ object UrlSecurityChecker {
             }
 
             val level = when {
+                scheme in dangerousSchemes -> SecurityLevel.DANGEROUS
                 !isHttps -> SecurityLevel.WARNING
                 isSuspicious -> SecurityLevel.WARNING
                 else -> SecurityLevel.SAFE
@@ -102,12 +105,23 @@ object UrlSecurityChecker {
         } catch (e: Exception) {
             return SecurityAssessment(
                 isSecure = false,
-                securityLevel = SecurityLevel.WARNING,
-                summary = "Malformed or Unparseable URL",
-                details = listOf("Unable to safely parse URL structure: ${e.localizedMessage}"),
+                securityLevel = SecurityLevel.UNKNOWN,
+                summary = "Failed to parse link structure",
+                details = listOf("Encountered parsing error: ${e.localizedMessage}"),
                 isHttps = false,
                 domain = null
             )
+        }
+    }
+
+    private fun extractHost(url: String, scheme: String): String? {
+        return try {
+            val uri = URI(url)
+            uri.host?.lowercase()
+        } catch (e: Exception) {
+            val afterScheme = if (scheme.isNotEmpty()) url.substringAfter("://").substringAfter(":") else url
+            val cleanPath = afterScheme.substringBefore("/").substringBefore("?").substringBefore("#")
+            cleanPath.substringBefore(":").lowercase().ifEmpty { null }
         }
     }
 }
