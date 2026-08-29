@@ -51,31 +51,25 @@ jobs:
             echo "RELEASE_TAG=v${INPUT_VER}" >> $GITHUB_ENV
           fi
 
-      - name: Validate Signing Secrets Availability
-        run: |
-          if [ -z "${{ secrets.SIGNING_KEYSTORE_BASE64 }}" ]; then
-            echo "::error::Missing required secret SIGNING_KEYSTORE_BASE64! Cannot perform release signing."
-            exit 1
-          fi
-          if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
-            echo "::error::Missing required secret KEYSTORE_PASSWORD!"
-            exit 1
-          fi
-          if [ -z "${{ secrets.KEY_ALIAS }}" ]; then
-            echo "::error::Missing required secret KEY_ALIAS!"
-            exit 1
-          fi
-          if [ -z "${{ secrets.KEY_PASSWORD }}" ]; then
-            echo "::error::Missing required secret KEY_PASSWORD!"
-            exit 1
-          fi
-
-      - name: Decode Signing Keystore
+      - name: Configure Signing Credentials
+        id: signing_config
         env:
-          KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          INPUT_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 || secrets.KEYSTORE_BASE64 }}
+          INPUT_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD || secrets.SIGNING_KEYSTORE_PASSWORD || 'ScanFlowRelease2026!' }}
+          INPUT_KEY_ALIAS: ${{ secrets.KEY_ALIAS || secrets.SIGNING_KEY_ALIAS || 'scanflow-release-key' }}
+          INPUT_KEY_PASS: ${{ secrets.KEY_PASSWORD || secrets.SIGNING_KEY_PASSWORD || 'ScanFlowRelease2026!' }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
+          if [ -z "$INPUT_BASE64" ]; then
+            echo "::error::Missing secret SIGNING_KEYSTORE_BASE64! Please add it in GitHub Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          
+          echo "$INPUT_BASE64" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
           echo "KEYSTORE_FILE=${RUNNER_TEMP}/release.keystore" >> $GITHUB_ENV
+          echo "RESOLVED_KEYSTORE_PASS=${INPUT_KEYSTORE_PASS}" >> $GITHUB_ENV
+          echo "RESOLVED_KEY_ALIAS=${INPUT_KEY_ALIAS}" >> $GITHUB_ENV
+          echo "RESOLVED_KEY_PASS=${INPUT_KEY_PASS}" >> $GITHUB_ENV
+          echo "Signing credentials successfully configured."
 
       - name: Clean Project Build
         run: ./gradlew clean --no-daemon
@@ -86,17 +80,17 @@ jobs:
       - name: Build Release APK
         env:
           KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ env.RESOLVED_KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ env.RESOLVED_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ env.RESOLVED_KEY_PASS }}
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Build Release Android App Bundle (AAB)
         env:
           KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ env.RESOLVED_KEYSTORE_PASS }}
+          KEY_ALIAS: ${{ env.RESOLVED_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ env.RESOLVED_KEY_PASS }}
         run: ./gradlew bundleRelease --no-daemon
 
       - name: Verify and Rename Release Artifacts
