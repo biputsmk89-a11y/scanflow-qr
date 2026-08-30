@@ -69,7 +69,7 @@ ScanFlow-QR/
 1. **Decode Production Keystore**: Decodes `SIGNING_KEYSTORE_BASE64` into a temporary keystore file.
 2. **Strict Validation**: Fails immediately if signing secrets are missing.
 3. **Clean Build**: Executes `./gradlew clean`.
-4. **Unit Tests**: Executes `./gradlew testReleaseUnitTest`.
+4. **Unit Tests**: Executes `./gradlew testDebugUnitTest`.
 5. **Build Release APK**: Executes `./gradlew assembleRelease`.
 6. **Build Release AAB**: Executes `./gradlew bundleRelease`.
 7. **Artifact Verification & Renaming**:
