@@ -51,6 +51,7 @@ import com.scanflow.qr.domain.model.QrType
 import com.scanflow.qr.domain.usecase.GetAnalyticsSummaryUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.stateIn
 
 class AnalyticsViewModel(
@@ -58,6 +59,7 @@ class AnalyticsViewModel(
 ) : ViewModel() {
 
     val analytics: StateFlow<AnalyticsSummary> = getAnalyticsSummaryUseCase()
+        .catch { emit(AnalyticsSummary()) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

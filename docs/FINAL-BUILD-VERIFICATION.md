@@ -13,10 +13,10 @@ PASS (`QrCodeParserTest`, `UrlSecurityCheckerTest`, `DataMappersTest`)
 PASS (Android Lint checks verified)
 
 ## Release APK
-PASS (`app/build/outputs/apk/release/ScanFlow-Qr-v1.0.5-release.apk`)
+PASS (`app/build/outputs/apk/release/ScanFlow-Qr-v1.0.6-release.apk`)
 
 ## Release AAB
-PASS (`app/build/outputs/bundle/release/ScanFlow-Qr-v1.0.5-release.aab`)
+PASS (`app/build/outputs/bundle/release/ScanFlow-Qr-v1.0.6-release.aab`)
 
 ## Signing
 PASS (Signed with production keystore via GitHub Secrets `SIGNING_KEYSTORE_BASE64`)
@@ -31,7 +31,7 @@ PASS (Signed with production keystore via GitHub Secrets `SIGNING_KEYSTORE_BASE6
 0
 
 ## APK
-`app/build/outputs/apk/release/ScanFlow-Qr-v1.0.5-release.apk`
+`app/build/outputs/apk/release/ScanFlow-Qr-v1.0.6-release.apk`
 
 ## AAB
-`app/build/outputs/bundle/release/ScanFlow-Qr-v1.0.5-release.aab`
+`app/build/outputs/bundle/release/ScanFlow-Qr-v1.0.6-release.aab`

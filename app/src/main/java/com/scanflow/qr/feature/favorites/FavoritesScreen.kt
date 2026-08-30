@@ -58,6 +58,7 @@ import com.scanflow.qr.domain.repository.FavoriteRepository
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -74,29 +75,39 @@ class FavoritesViewModel(
 ) : ViewModel() {
 
     val uiState: StateFlow<FavoritesUiState> = combine(
-        favoriteRepository.getAllFavoriteScans(),
-        favoriteRepository.getAllFavoriteCreatedQrs()
+        favoriteRepository.getAllFavoriteScans().catch { emit(emptyList()) },
+        favoriteRepository.getAllFavoriteCreatedQrs().catch { emit(emptyList()) }
     ) { scans, qrs ->
         FavoritesUiState(
             favoriteScans = scans,
             favoriteUserQrs = qrs,
             isLoading = false
         )
+    }.catch {
+        emit(FavoritesUiState(isLoading = false))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = FavoritesUiState(isLoading = true)
+        initialValue = FavoritesUiState(isLoading = false)
     )
 
-    fun toggleScanFavorite(id: Long, current: Boolean) {
+    fun toggleScanFavorite(scanId: Long) {
         viewModelScope.launch {
-            toggleFavoriteUseCase.toggleScanFavorite(id, !current)
+            try {
+                toggleFavoriteUseCase.toggleScanFavorite(scanId, false)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    fun toggleUserQrFavorite(id: Long, current: Boolean) {
+    fun toggleQrFavorite(qrId: Long) {
         viewModelScope.launch {
-            toggleFavoriteUseCase.toggleUserQrFavorite(id, !current)
+            try {
+                toggleFavoriteUseCase.toggleUserQrFavorite(qrId, false)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

@@ -40,7 +40,8 @@ import com.scanflow.qr.core.designsystem.ScanFlowSecondaryButton
 
 @Composable
 fun AuthScreen(
-    onContinueAsGuest: () -> Unit
+    onContinueAsGuest: () -> Unit,
+    onLearnPrivacy: () -> Unit = onContinueAsGuest
 ) {
     Column(
         modifier = Modifier
@@ -113,7 +114,7 @@ fun AuthScreen(
             ScanFlowSecondaryButton(
                 text = "Learn About Privacy & Security",
                 icon = Icons.Default.Lock,
-                onClick = onContinueAsGuest,
+                onClick = onLearnPrivacy,
                 modifier = Modifier.fillMaxWidth()
             )
         }

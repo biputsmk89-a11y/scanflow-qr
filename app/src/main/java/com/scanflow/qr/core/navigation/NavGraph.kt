@@ -87,6 +87,9 @@ fun ScanFlowNavGraph(
                     navController.navigate(Screen.Main.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
+                },
+                onLearnPrivacy = {
+                    navController.navigate(Screen.About.route)
                 }
             )
         }

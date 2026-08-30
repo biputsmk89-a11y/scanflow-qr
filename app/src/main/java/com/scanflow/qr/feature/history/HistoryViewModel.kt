@@ -11,6 +11,7 @@ import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
@@ -44,9 +45,9 @@ class HistoryViewModel(
         Triple(query, filterType, selectedIds)
     }.flatMapLatest { (query, filterType, selectedIds) ->
         val flow = when {
-            query.isNotEmpty() -> getHistoryUseCase.search(query)
-            filterType != null -> getHistoryUseCase.getByType(filterType)
-            else -> getHistoryUseCase()
+            query.isNotEmpty() -> getHistoryUseCase.search(query).catch { emit(emptyList()) }
+            filterType != null -> getHistoryUseCase.getByType(filterType).catch { emit(emptyList()) }
+            else -> getHistoryUseCase().catch { emit(emptyList()) }
         }
         flow.combine(_selectedIds) { items, selected ->
             HistoryUiState(
@@ -58,10 +59,12 @@ class HistoryViewModel(
                 isLoading = false
             )
         }
+    }.catch {
+        emit(HistoryUiState(isLoading = false))
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = HistoryUiState(isLoading = true)
+        initialValue = HistoryUiState(isLoading = false)
     )
 
     fun onSearchQueryChanged(query: String) {

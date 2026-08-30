@@ -67,28 +67,35 @@ fun MainScreen(
                 BottomNavItem.items.forEach { item ->
                     if (item == BottomNavItem.Scan) {
                         // Hero Center Scan Button
-                        FloatingActionButton(
-                            onClick = onNavigateToScan,
-                            shape = CircleShape,
-                            containerColor = ElectricBlue,
-                            contentColor = Color.White,
-                            elevation = FloatingActionButtonDefaults.elevation(6.dp),
+                        Box(
                             modifier = Modifier
-                                .offset(y = (-14).dp)
-                                .size(56.dp)
+                                .weight(1f)
+                                .fillMaxSize(),
+                            contentAlignment = androidx.compose.ui.Alignment.Center
                         ) {
-                            Box(
+                            FloatingActionButton(
+                                onClick = onNavigateToScan,
+                                shape = CircleShape,
+                                containerColor = ElectricBlue,
+                                contentColor = Color.White,
+                                elevation = FloatingActionButtonDefaults.elevation(6.dp),
                                 modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Brush.linearGradient(listOf(ElectricBlue, CyanAccent))),
-                                contentAlignment = androidx.compose.ui.Alignment.Center
+                                    .offset(y = (-14).dp)
+                                    .size(56.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCodeScanner,
-                                    contentDescription = "Scan",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(28.dp)
-                                )
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Brush.linearGradient(listOf(ElectricBlue, CyanAccent))),
+                                    contentAlignment = androidx.compose.ui.Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.QrCodeScanner,
+                                        contentDescription = "Scan",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
                             }
                         }
                     } else {

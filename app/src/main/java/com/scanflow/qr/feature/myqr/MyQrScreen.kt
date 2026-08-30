@@ -60,6 +60,7 @@ import com.scanflow.qr.domain.model.UserQrCode
 import com.scanflow.qr.domain.repository.QrGeneratorRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -75,10 +76,11 @@ class MyQrViewModel(
 
     val uiState: StateFlow<MyQrUiState> = qrRepository.getAllUserQrs()
         .map { MyQrUiState(userQrs = it, isLoading = false) }
+        .catch { emit(MyQrUiState(isLoading = false)) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = MyQrUiState(isLoading = true)
+            initialValue = MyQrUiState(isLoading = false)
         )
 
     fun duplicateQr(qr: UserQrCode) {
