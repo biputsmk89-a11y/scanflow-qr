@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-import com.scanflow.qr.domain.model.ParsedQrData
+import com.scanflow.qr.domain.model.QrCodeData
 
 data class ScannerUiState(
     val isTorchEnabled: Boolean = false,
@@ -27,7 +27,7 @@ data class ScannerUiState(
     val isScanningActive: Boolean = true,
     val isBatchMode: Boolean = false,
     val batchCount: Int = 0,
-    val lastBatchItem: ParsedQrData? = null,
+    val lastBatchItem: QrCodeData? = null,
     val lastScannedId: Long? = null,
     val errorMessage: String? = null
 )

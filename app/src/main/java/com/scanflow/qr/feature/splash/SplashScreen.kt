@@ -2,15 +2,16 @@ package com.scanflow.qr.feature.splash
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.res.painterResource
-import com.scanflow.qr.R
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,11 +23,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.scanflow.qr.R
 import com.scanflow.qr.core.designsystem.CyanAccent
 import com.scanflow.qr.core.designsystem.DarkBackground
-import com.scanflow.qr.core.designsystem.ElectricBlue
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,9 +61,9 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.scale(scale.value)
         ) {
-            androidx.compose.foundation.layout.Box(
+            Box(
                 modifier = Modifier
-                    .androidx.compose.foundation.layout.size(110.dp)
+                    .size(110.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(Color.White.copy(alpha = 0.08f))
                     .padding(8.dp),
@@ -71,11 +73,11 @@ fun SplashScreen(
                     painter = painterResource(id = R.drawable.app_logo),
                     contentDescription = "ScanFlow QR Logo",
                     modifier = Modifier
-                        .androidx.compose.foundation.layout.size(96.dp)
+                        .size(96.dp)
                         .clip(RoundedCornerShape(20.dp))
                 )
             }
-            androidx.compose.foundation.layout.Spacer(modifier = Modifier.androidx.compose.foundation.layout.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 text = "ScanFlow QR",
                 style = MaterialTheme.typography.displayMedium,

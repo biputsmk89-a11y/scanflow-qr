@@ -42,10 +42,10 @@ object BackupSyncManager {
                     put("format", scan.format)
                     put("title", scan.title)
                     put("content", scan.content)
-                    put("rawBytes", scan.rawBytes ?: "")
                     put("isFavorite", scan.isFavorite)
+                    put("isSecure", scan.isSecure)
+                    put("safetyWarning", scan.safetyWarning ?: "")
                     put("createdAt", scan.createdAt)
-                    put("metadata", scan.metadata ?: "")
                 }
                 scansArray.put(scanObj)
             }
@@ -61,7 +61,8 @@ object BackupSyncManager {
                     put("foregroundColor", qr.foregroundColor)
                     put("backgroundColor", qr.backgroundColor)
                     put("patternStyle", qr.patternStyle)
-                    put("cornerEyeStyle", qr.cornerEyeStyle)
+                    put("eyeStyle", qr.eyeStyle)
+                    put("logoPath", qr.logoPath ?: "")
                     put("isFavorite", qr.isFavorite)
                     put("scanCount", qr.scanCount)
                     put("shareCount", qr.shareCount)
@@ -130,10 +131,10 @@ object BackupSyncManager {
                         format = obj.optString("format", "QR_CODE"),
                         title = obj.optString("title", "Scan Item"),
                         content = obj.optString("content", ""),
-                        rawBytes = obj.optString("rawBytes", null),
-                        isFavorite = obj.optBoolean("isFavorite", false),
                         createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
-                        metadata = obj.optString("metadata", null)
+                        isFavorite = obj.optBoolean("isFavorite", false),
+                        isSecure = obj.optBoolean("isSecure", true),
+                        safetyWarning = if (obj.has("safetyWarning") && obj.getString("safetyWarning").isNotEmpty()) obj.getString("safetyWarning") else null
                     )
                     database.scanHistoryDao().insertScan(scan)
                     importedScans++
@@ -153,13 +154,14 @@ object BackupSyncManager {
                         foregroundColor = obj.optInt("foregroundColor", -16777216),
                         backgroundColor = obj.optInt("backgroundColor", -1),
                         patternStyle = obj.optString("patternStyle", "SQUARE"),
-                        cornerEyeStyle = obj.optString("cornerEyeStyle", "SQUARE"),
+                        eyeStyle = obj.optString("eyeStyle", "SQUARE"),
+                        logoPath = if (obj.has("logoPath") && obj.getString("logoPath").isNotEmpty()) obj.getString("logoPath") else null,
+                        createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
+                        updatedAt = obj.optLong("updatedAt", System.currentTimeMillis()),
                         isFavorite = obj.optBoolean("isFavorite", false),
                         scanCount = obj.optInt("scanCount", 0),
                         shareCount = obj.optInt("shareCount", 0),
-                        downloadCount = obj.optInt("downloadCount", 0),
-                        createdAt = obj.optLong("createdAt", System.currentTimeMillis()),
-                        updatedAt = obj.optLong("updatedAt", System.currentTimeMillis())
+                        downloadCount = obj.optInt("downloadCount", 0)
                     )
                     database.qrCodeDao().insertQr(qr)
                     importedQrs++
