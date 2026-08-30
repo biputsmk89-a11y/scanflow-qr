@@ -79,8 +79,11 @@ jobs:
       - name: Clean Project Build
         run: ./gradlew clean --no-daemon
 
-      - name: Run Unit Tests
-        run: ./gradlew testDebugUnitTest --stacktrace --no-daemon
+      - name: Run Release Unit Tests
+        run: ./gradlew testReleaseUnitTest --stacktrace --no-daemon
+
+      - name: Run Release Lint
+        run: ./gradlew lintRelease --no-daemon
 
       - name: Build Release APK
         env:

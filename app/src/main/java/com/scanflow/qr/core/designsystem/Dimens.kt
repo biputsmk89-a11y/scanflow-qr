@@ -46,3 +46,12 @@ object Dimens {
     val ElevationMedium: Dp = 4.dp
     val ElevationLarge: Dp = 8.dp
 }
+
+// Canonical Top-Level Design Token Aliases
+val ButtonHeight: Dp = Dimens.ButtonHeight
+val SmallButtonHeight: Dp = Dimens.SmallButtonHeight
+val CornerRadiusButton: Dp = Dimens.CornerRadiusButton
+val CornerRadiusCard: Dp = Dimens.CornerRadiusCard
+val QrPreviewCardSize: Dp = Dimens.QrPreviewCardSize
+val ScannerFrameSize: Dp = Dimens.ScannerFrameSize
+
