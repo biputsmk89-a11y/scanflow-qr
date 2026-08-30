@@ -19,10 +19,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+import com.scanflow.qr.domain.model.ParsedQrData
+
 data class ScannerUiState(
     val isTorchEnabled: Boolean = false,
     val cameraLens: Int = CameraSelector.LENS_FACING_BACK,
     val isScanningActive: Boolean = true,
+    val isBatchMode: Boolean = false,
+    val batchCount: Int = 0,
+    val lastBatchItem: ParsedQrData? = null,
     val lastScannedId: Long? = null,
     val errorMessage: String? = null
 )
@@ -43,6 +48,19 @@ class ScannerViewModel(
         _uiState.value = _uiState.value.copy(isTorchEnabled = !_uiState.value.isTorchEnabled)
     }
 
+    fun toggleBatchMode() {
+        val newMode = !_uiState.value.isBatchMode
+        _uiState.value = _uiState.value.copy(
+            isBatchMode = newMode,
+            batchCount = if (newMode) _uiState.value.batchCount else 0,
+            lastBatchItem = if (newMode) _uiState.value.lastBatchItem else null
+        )
+    }
+
+    fun clearBatch() {
+        _uiState.value = _uiState.value.copy(batchCount = 0, lastBatchItem = null)
+    }
+
     fun switchCamera() {
         val newLens = if (_uiState.value.cameraLens == CameraSelector.LENS_FACING_BACK) {
             CameraSelector.LENS_FACING_FRONT
@@ -54,15 +72,20 @@ class ScannerViewModel(
 
     fun onBarcodeDetected(context: Context, rawValue: String, format: String, onNavigateResult: (Long) -> Unit) {
         val currentTime = System.currentTimeMillis()
-        if (rawValue == lastScannedContent && (currentTime - lastScanTimestamp) < 2000) {
-            return // Prevent duplicate scan spam
+        if (rawValue == lastScannedContent && (currentTime - lastScanTimestamp) < 1500) {
+            return // Prevent duplicate scan spam within 1.5s
         }
 
         if (!_uiState.value.isScanningActive) return
 
         lastScannedContent = rawValue
         lastScanTimestamp = currentTime
-        _uiState.value = _uiState.value.copy(isScanningActive = false)
+
+        val isBatch = _uiState.value.isBatchMode
+
+        if (!isBatch) {
+            _uiState.value = _uiState.value.copy(isScanningActive = false)
+        }
 
         viewModelScope.launch {
             val settings = getSettingsUseCase().first()
@@ -72,8 +95,16 @@ class ScannerViewModel(
             val parsedData = parseQrCodeUseCase(rawValue, format)
             val savedId = saveScanResultUseCase(parsedData)
 
-            _uiState.value = _uiState.value.copy(lastScannedId = savedId)
-            onNavigateResult(savedId)
+            if (isBatch) {
+                _uiState.value = _uiState.value.copy(
+                    batchCount = _uiState.value.batchCount + 1,
+                    lastBatchItem = parsedData,
+                    lastScannedId = savedId
+                )
+            } else {
+                _uiState.value = _uiState.value.copy(lastScannedId = savedId)
+                onNavigateResult(savedId)
+            }
         }
     }
 

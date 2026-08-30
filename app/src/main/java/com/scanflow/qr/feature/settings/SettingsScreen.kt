@@ -42,10 +42,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudSync
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.ui.platform.LocalContext
+import com.scanflow.qr.ScanFlowApplication
+import com.scanflow.qr.core.utils.BackupSyncManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scanflow.qr.core.designsystem.Dimens
@@ -92,6 +99,19 @@ class SettingsViewModel(
     fun toggleAutoCopy(enabled: Boolean) {
         viewModelScope.launch { updateSettingsUseCase.updateAutoCopy(enabled) }
     }
+
+    fun exportBackup(context: Context, app: ScanFlowApplication) {
+        viewModelScope.launch {
+            BackupSyncManager.exportBackup(context, app.database)
+        }
+    }
+
+    fun importBackup(context: Context, uri: Uri, app: ScanFlowApplication, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val (scans, qrs) = BackupSyncManager.importBackup(context, uri, app.database)
+            onResult("Restored $scans scans and $qrs QR codes successfully!")
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,7 +123,20 @@ fun SettingsScreen(
     onNavigateToAnalytics: () -> Unit,
     onNavigateToAbout: () -> Unit
 ) {
+    val context = LocalContext.current
+    val app = context.applicationContext as ScanFlowApplication
     val settings by viewModel.settings.collectAsState()
+
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            if (uri != null) {
+                viewModel.importBackup(context, uri, app) { msg ->
+                    Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -191,6 +224,33 @@ fun SettingsScreen(
                                 AppThemeMode.SYSTEM -> AppThemeMode.DARK
                             }
                             viewModel.setTheme(nextMode)
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.Spacing24))
+
+            // Cloud & Local Backup Sync
+            SectionHeader(title = "Cloud & Local Backup")
+            Spacer(modifier = Modifier.height(Dimens.Spacing8))
+            ScanFlowCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = Dimens.Spacing8)) {
+                    SettingNavRow(
+                        title = "Export Backup (Google Drive / JSON)",
+                        subtitle = "Save all scan history and created QR codes",
+                        icon = Icons.Default.CloudUpload,
+                        onClick = {
+                            viewModel.exportBackup(context, app)
+                        }
+                    )
+                    Divider(color = MaterialTheme.colorScheme.outline)
+                    SettingNavRow(
+                        title = "Restore from Backup File",
+                        subtitle = "Import JSON backup file to restore records",
+                        icon = Icons.Default.CloudDownload,
+                        onClick = {
+                            importLauncher.launch("application/json")
                         }
                     )
                 }

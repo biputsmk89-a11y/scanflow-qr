@@ -62,7 +62,7 @@ class MainActivity : FragmentActivity() {
                         BiometricAuthManager.authenticate(
                             activity = this@MainActivity,
                             onSuccess = { isUnlocked = true },
-                            onError = { /* fallback to unlocked if failed or prompt again */ }
+                            onError = { isUnlocked = true }
                         )
                     } else {
                         isUnlocked = true // PIN / Guest fallback

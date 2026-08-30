@@ -12,6 +12,7 @@ import com.scanflow.qr.feature.analytics.AnalyticsViewModel
 import com.scanflow.qr.feature.auth.AuthScreen
 import com.scanflow.qr.feature.favorites.FavoritesScreen
 import com.scanflow.qr.feature.favorites.FavoritesViewModel
+import com.scanflow.qr.feature.generator.CreateQrScreen
 import com.scanflow.qr.feature.generator.CreateQrViewModel
 import com.scanflow.qr.feature.history.HistoryViewModel
 import com.scanflow.qr.feature.home.HomeViewModel
@@ -129,6 +130,14 @@ fun ScanFlowNavGraph(
                 scanId = scanId,
                 viewModel = scanResultViewModel,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.CreateQr.route) {
+            CreateQrScreen(
+                viewModel = createQrViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) }
             )
         }
 

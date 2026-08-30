@@ -150,10 +150,10 @@ fun ProfileScreen(
                 )
                 Divider(color = MaterialTheme.colorScheme.outline)
                 SettingNavRow(
-                    title = "Cloud Synchronization",
-                    subtitle = "Offline-First Local Architecture (Ready)",
+                    title = "Cloud & Local Backup Sync",
+                    subtitle = "Google Drive & JSON Export/Restore",
                     icon = Icons.Default.CloudSync,
-                    onClick = {}
+                    onClick = onNavigateToSettings
                 )
             }
         }

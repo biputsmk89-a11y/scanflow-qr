@@ -100,6 +100,53 @@ class QrCodeParserTest {
     }
 
     @Test
+    fun `parse sms schema correctly identifies SMS type`() {
+        val raw = "smsto:+628123456789:Hello from ScanFlow"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.SMS)
+        assertThat(result.displayDetails["Phone Number"]).isEqualTo("+628123456789")
+        assertThat(result.displayDetails["Message"]).isEqualTo("Hello from ScanFlow")
+    }
+
+    @Test
+    fun `parse calendar vEvent correctly identifies CALENDAR type`() {
+        val raw = """
+            BEGIN:VEVENT
+            SUMMARY:Quarterly Tech Sprint
+            LOCATION:Meeting Room Alpha
+            END:VEVENT
+        """.trimIndent()
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.CALENDAR)
+        assertThat(result.title).isEqualTo("Quarterly Tech Sprint")
+        assertThat(result.displayDetails["Location"]).isEqualTo("Meeting Room Alpha")
+    }
+
+    @Test
+    fun `parse crypto and upi payment payloads correctly identifies PAYMENT type`() {
+        val rawUpi = "upi://pay?pa=merchant@upi&pn=ScanFlow"
+        val resultUpi = QrCodeParser.parse(rawUpi)
+        assertThat(resultUpi.type).isEqualTo(QrType.PAYMENT)
+        assertThat(resultUpi.title).isEqualTo("UPI Payment")
+
+        val rawBtc = "bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+        val resultBtc = QrCodeParser.parse(rawBtc)
+        assertThat(resultBtc.type).isEqualTo(QrType.PAYMENT)
+        assertThat(resultBtc.title).isEqualTo("Bitcoin Payment")
+    }
+
+    @Test
+    fun `parse social media profile link correctly identifies SOCIAL type`() {
+        val raw = "https://instagram.com/scanflow.official"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.SOCIAL)
+        assertThat(result.displayDetails["URL"]).isEqualTo("https://instagram.com/scanflow.official")
+    }
+
+    @Test
     fun `parse plain text fallback`() {
         val raw = "Simple plain text memo without schema"
         val result = QrCodeParser.parse(raw)

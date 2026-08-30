@@ -176,9 +176,28 @@ fun CreateQrScreen(
                                 value = uiState.wifiPassword,
                                 onValueChange = { viewModel.updateField { copy(wifiPassword = it) } },
                                 label = "Wi-Fi Password",
-                                placeholder = "Leave empty if open",
+                                placeholder = "Leave empty if open network",
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                            Text(
+                                text = "Security Protocol",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8)
+                            ) {
+                                listOf("WPA" to "WPA/WPA2", "WEP" to "WEP", "nopass" to "Open (None)").forEach { (sec, label) ->
+                                    ScanFlowChip(
+                                        text = label,
+                                        selected = uiState.wifiSecurity == sec,
+                                        onClick = { viewModel.updateField { copy(wifiSecurity = sec) } }
+                                    )
+                                }
+                            }
                         }
                         QrType.CONTACT -> {
                             ScanFlowTextField(
@@ -306,27 +325,79 @@ fun CreateQrScreen(
                             ScanFlowTextField(
                                 value = uiState.calendarLocation,
                                 onValueChange = { viewModel.updateField { copy(calendarLocation = it) } },
-                                label = "Location",
+                                label = "Event Location",
                                 placeholder = "Building 4, Room 201",
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
                         QrType.PAYMENT -> {
+                            Text(
+                                text = "Payment Method / Currency",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8)
+                            ) {
+                                listOf("UPI", "Bitcoin", "Ethereum", "PayPal").forEach { method ->
+                                    ScanFlowChip(
+                                        text = method,
+                                        selected = uiState.paymentType == method,
+                                        onClick = { viewModel.updateField { copy(paymentType = method) } }
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(Dimens.Spacing12))
                             ScanFlowTextField(
                                 value = uiState.paymentAddress,
                                 onValueChange = { viewModel.updateField { copy(paymentAddress = it) } },
-                                label = "Payment Address / Wallet ID",
-                                placeholder = "merchant@upi or BTC address",
+                                label = when (uiState.paymentType) {
+                                    "UPI" -> "VPA / UPI ID (e.g. name@upi)"
+                                    "Bitcoin" -> "Bitcoin Wallet Address"
+                                    "Ethereum" -> "Ethereum Wallet Address"
+                                    else -> "PayPal Username / Handle"
+                                },
+                                placeholder = when (uiState.paymentType) {
+                                    "UPI" -> "merchant@oksbi"
+                                    "Bitcoin" -> "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+                                    "Ethereum" -> "0x71C...8976F"
+                                    else -> "your_paypal_tag"
+                                },
                                 leadingIcon = Icons.Default.Payment,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
                         QrType.SOCIAL -> {
+                            Text(
+                                text = "Select Platform",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8)
+                            ) {
+                                listOf("Instagram", "Twitter / X", "TikTok", "LinkedIn", "GitHub", "YouTube").forEach { platform ->
+                                    ScanFlowChip(
+                                        text = platform,
+                                        selected = uiState.socialPlatform == platform,
+                                        onClick = { viewModel.updateField { copy(socialPlatform = platform) } }
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(Dimens.Spacing12))
                             ScanFlowTextField(
                                 value = uiState.socialUsername,
                                 onValueChange = { viewModel.updateField { copy(socialUsername = it) } },
-                                label = "Username or Handle",
-                                placeholder = "username (e.g. scanflow)",
+                                label = "${uiState.socialPlatform} Username",
+                                placeholder = "username without @",
                                 leadingIcon = Icons.Default.Share,
                                 modifier = Modifier.fillMaxWidth()
                             )
