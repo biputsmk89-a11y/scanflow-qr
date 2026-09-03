@@ -74,7 +74,7 @@ fun ScanFlowNavGraph(
             OnboardingScreen(
                 onFinish = {
                     onCompleteOnboarding()
-                    navController.navigate(Screen.Auth.route) {
+                    navController.navigate(Screen.Main.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                 }
