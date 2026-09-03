@@ -11,7 +11,10 @@ import com.scanflow.qr.core.common.Constants
 import com.scanflow.qr.domain.model.AppSettings
 import com.scanflow.qr.domain.model.AppThemeMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import androidx.datastore.preferences.core.emptyPreferences
+import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = Constants.PREFERENCES_NAME)
 
@@ -27,23 +30,31 @@ class PreferencesManager(private val context: Context) {
     private val KEY_PIN_CODE = stringPreferencesKey("pin_code")
     private val KEY_ONBOARDING = booleanPreferencesKey("is_onboarding_completed")
 
-    val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { pref ->
-        AppSettings(
-            themeMode = when (pref[KEY_THEME_MODE]) {
-                "LIGHT" -> AppThemeMode.LIGHT
-                "SYSTEM" -> AppThemeMode.SYSTEM
-                else -> AppThemeMode.DARK
-            },
-            vibrateOnScan = pref[KEY_VIBRATE] ?: true,
-            beepOnScan = pref[KEY_BEEP] ?: true,
-            autoOpenUrl = pref[KEY_AUTO_OPEN] ?: false,
-            autoCopyToClipboard = pref[KEY_AUTO_COPY] ?: false,
-            isAppLockEnabled = pref[KEY_APP_LOCK] ?: false,
-            isBiometricEnabled = pref[KEY_BIOMETRIC] ?: false,
-            pinCode = pref[KEY_PIN_CODE],
-            isOnboardingCompleted = pref[KEY_ONBOARDING] ?: false
-        )
-    }
+    val settingsFlow: Flow<AppSettings> = context.dataStore.data
+        .catch { exception ->
+            if (exception is java.io.IOException) {
+                emit(androidx.datastore.preferences.core.emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { pref ->
+            AppSettings(
+                themeMode = when (pref[KEY_THEME_MODE]) {
+                    "LIGHT" -> AppThemeMode.LIGHT
+                    "SYSTEM" -> AppThemeMode.SYSTEM
+                    else -> AppThemeMode.DARK
+                },
+                vibrateOnScan = pref[KEY_VIBRATE] ?: true,
+                beepOnScan = pref[KEY_BEEP] ?: true,
+                autoOpenUrl = pref[KEY_AUTO_OPEN] ?: false,
+                autoCopyToClipboard = pref[KEY_AUTO_COPY] ?: false,
+                isAppLockEnabled = pref[KEY_APP_LOCK] ?: false,
+                isBiometricEnabled = pref[KEY_BIOMETRIC] ?: false,
+                pinCode = pref[KEY_PIN_CODE],
+                isOnboardingCompleted = pref[KEY_ONBOARDING] ?: false
+            )
+        }
 
     suspend fun updateThemeMode(themeMode: AppThemeMode) {
         context.dataStore.edit { pref ->
