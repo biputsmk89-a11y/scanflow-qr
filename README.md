@@ -15,21 +15,21 @@ A production-ready, native Android application built with **Jetpack Compose**, *
 ### Local Build & Testing Commands
 ```bash
 # 1. Run All Unit Tests
-./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest       # On Windows: .\gradlew testDebugUnitTest
 
 # 2. Run Android Lint Checks
-./gradlew lintDebug
+./gradlew lintDebug               # On Windows: .\gradlew lintDebug
 
 # 3. Build Debug APK (For Local Device Testing)
-./gradlew assembleDebug
+./gradlew assembleDebug           # On Windows: .\gradlew assembleDebug
 # Output: app/build/outputs/apk/debug/app-debug.apk
 
 # 4. Build Production Release APK (Minified via R8)
-./gradlew assembleRelease
+./gradlew assembleRelease         # On Windows: .\gradlew assembleRelease
 # Output: app/build/outputs/apk/release/app-release.apk
 
 # 5. Build Production Android App Bundle (AAB for Google Play Console)
-./gradlew bundleRelease
+./gradlew bundleRelease           # On Windows: .\gradlew bundleRelease
 # Output: app/build/outputs/bundle/release/app-release.aab
 ```
 
@@ -107,17 +107,21 @@ ScanFlow QR/
 │       └── test/java/com/scanflow/qr/     # Comprehensive Unit Tests Suite
 ├── .github/
 │   └── workflows/
-│       ├── android.yml            # Automated CI (Test, Lint, Debug APK)
-│       └── release.yml            # Automated Release Pipeline (Signed APK & AAB)
+│       ├── android-ci.yml         # Automated CI (Test, Lint, Debug APK)
+│       └── android-release.yml    # Automated Release Pipeline (Signed APK & AAB)
 ├── docs/
+│   ├── FINAL-BUILD-VERIFICATION.md # Final build verification logs
+│   ├── FINAL-RELEASE-REPORT.md    # Final release audit certification
+│   ├── github-build-release.md    # Guide for GitHub CI/CD build & release
+│   ├── github-secrets.md          # Guide for configuring GitHub Repository secrets
 │   ├── google-play-data-safety.md # Play Console Data Safety questionnaire declarations
 │   ├── google-play-deployment.md  # Step-by-step submission & release tracks guide
-│   ├── test-plan.md               # Master QA test matrix
 │   ├── release-checklist.md       # Pre-release quality gate checklist
-│   └── FINAL-RELEASE-REPORT.md    # Final release audit certification
+│   └── test-plan.md               # Master QA test matrix
 ├── playstore/
 │   ├── listing-details.md         # Store listing metadata (short/full descriptions)
-│   └── asset-specifications.md    # Icon, Feature graphic, and Screenshot specs
+│   ├── asset-specifications.md    # Icon, Feature graphic, and Screenshot specs
+│   └── icon_512.png               # High-res 512x512 app icon asset
 ├── CONTRIBUTING.md                # Contribution guidelines
 ├── SECURITY.md                    # Vulnerability reporting policy
 ├── LICENSE                        # Apache 2.0 License
@@ -129,10 +133,10 @@ ScanFlow QR/
 
 ## 🤖 GitHub Actions CI/CD Pipeline
 
-- **Continuous Integration (`.github/workflows/android.yml`)**:
+- **Continuous Integration (`.github/workflows/android-ci.yml`)**:
   - Automatically triggered on `push` and `pull_request` to `main`.
   - Runs unit tests, lint checks, builds debug APK, and uploads artifact.
-- **Production Release Pipeline (`.github/workflows/release.yml`)**:
+- **Production Release Pipeline (`.github/workflows/android-release.yml`)**:
   - Automatically triggered when a Git tag is pushed (e.g. `v1.0.0`) or via manual trigger.
   - Restores release keystore from GitHub Secrets (`SIGNING_KEYSTORE_BASE64`), compiles minified `app-release.apk` and `app-release.aab`, and publishes a GitHub Release.
 

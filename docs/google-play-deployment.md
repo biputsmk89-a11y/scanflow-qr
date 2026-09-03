@@ -24,7 +24,7 @@ keytool -genkey -v -keystore scanflow-release.jks -alias scanflow-key -keyalg RS
 
 ## 3. Configuring GitHub Actions Secrets for Automated Releases
 
-To enable automated release builds via `.github/workflows/release.yml`, add the following Secrets to your GitHub repository (**Settings > Secrets and variables > Actions**):
+To enable automated release builds via `.github/workflows/android-release.yml`, add the following Secrets to your GitHub repository (**Settings > Secrets and variables > Actions**):
 
 | Secret Name | Description | Example / Value |
 | :--- | :--- | :--- |

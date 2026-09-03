@@ -75,9 +75,18 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { pref -> pref[KEY_BIOMETRIC] = enabled }
     }
 
+    private fun hashPin(pin: String): String {
+        return if (pin.length == 64 && pin.all { it.isDigit() || it in 'a'..'f' }) {
+            pin // Already hashed
+        } else {
+            val bytes = java.security.MessageDigest.getInstance("SHA-256").digest(pin.toByteArray())
+            bytes.joinToString("") { "%02x".format(it) }
+        }
+    }
+
     suspend fun updatePinCode(pin: String?) {
         context.dataStore.edit { pref ->
-            if (pin != null) pref[KEY_PIN_CODE] = pin else pref.remove(KEY_PIN_CODE)
+            if (pin != null) pref[KEY_PIN_CODE] = hashPin(pin) else pref.remove(KEY_PIN_CODE)
         }
     }
 

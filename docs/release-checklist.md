@@ -39,6 +39,6 @@ Quality gate and pre-submission checklist for Google Play and GitHub release.
 ### 6. Play Store & CI/CD
 - [x] Play Store short and full descriptions prepared in `playstore/listing-details.md`.
 - [x] Graphic asset specifications documented in `playstore/asset-specifications.md`.
-- [x] GitHub Actions CI workflow created (`.github/workflows/android.yml`).
-- [x] GitHub Actions Release pipeline created (`.github/workflows/release.yml`).
+- [x] GitHub Actions CI workflow created (`.github/workflows/android-ci.yml`).
+- [x] GitHub Actions Release pipeline created (`.github/workflows/android-release.yml`).
 - [x] Comprehensive `.gitignore` protecting secrets, keystores, and build outputs.

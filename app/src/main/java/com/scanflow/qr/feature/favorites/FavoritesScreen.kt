@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.QrCode
@@ -91,20 +91,20 @@ class FavoritesViewModel(
         initialValue = FavoritesUiState(isLoading = false)
     )
 
-    fun toggleScanFavorite(scanId: Long) {
+    fun toggleScanFavorite(scanId: Long, isFavorite: Boolean) {
         viewModelScope.launch {
             try {
-                toggleFavoriteUseCase.toggleScanFavorite(scanId, false)
+                toggleFavoriteUseCase.toggleScanFavorite(scanId, !isFavorite)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    fun toggleQrFavorite(qrId: Long) {
+    fun toggleUserQrFavorite(qrId: Long, isFavorite: Boolean) {
         viewModelScope.launch {
             try {
-                toggleFavoriteUseCase.toggleUserQrFavorite(qrId, false)
+                toggleFavoriteUseCase.toggleUserQrFavorite(qrId, !isFavorite)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -130,7 +130,7 @@ fun FavoritesScreen(
                 title = { Text("Favorites", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

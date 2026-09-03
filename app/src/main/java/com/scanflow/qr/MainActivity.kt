@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.rememberNavController
 import com.scanflow.qr.core.designsystem.ScanFlowQRTheme
 import com.scanflow.qr.core.navigation.ScanFlowNavGraph
@@ -80,74 +82,118 @@ class MainActivity : FragmentActivity() {
                     if (isUnlocked) {
                         val navController = rememberNavController()
 
-                        val homeViewModel = remember {
-                            HomeViewModel(
-                                app.getHistoryUseCase,
-                                app.getAnalyticsSummaryUseCase,
-                                app.toggleFavoriteUseCase
-                            )
-                        }
+                        val homeViewModel: HomeViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    HomeViewModel(
+                                        app.getHistoryUseCase,
+                                        app.getAnalyticsSummaryUseCase,
+                                        app.toggleFavoriteUseCase
+                                    )
+                                }
+                            }
+                        )
 
-                        val scannerViewModel = remember {
-                            ScannerViewModel(
-                                app.parseQrCodeUseCase,
-                                app.saveScanResultUseCase,
-                                app.getSettingsUseCase
-                            )
-                        }
+                        val scannerViewModel: ScannerViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    ScannerViewModel(
+                                        app.parseQrCodeUseCase,
+                                        app.saveScanResultUseCase,
+                                        app.getSettingsUseCase
+                                    )
+                                }
+                            }
+                        )
 
-                        val scanResultViewModel = remember {
-                            ScanResultViewModel(
-                                app.historyRepository,
-                                app.toggleFavoriteUseCase
-                            )
-                        }
+                        val scanResultViewModel: ScanResultViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    ScanResultViewModel(
+                                        app.historyRepository,
+                                        app.toggleFavoriteUseCase
+                                    )
+                                }
+                            }
+                        )
 
-                        val createQrViewModel = remember {
-                            CreateQrViewModel(app.qrGeneratorRepository)
-                        }
+                        val createQrViewModel: CreateQrViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    CreateQrViewModel(app.qrGeneratorRepository)
+                                }
+                            }
+                        )
 
-                        val qrPreviewViewModel = remember {
-                            QrPreviewViewModel(app.qrGeneratorRepository)
-                        }
+                        val qrPreviewViewModel: QrPreviewViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    QrPreviewViewModel(app.qrGeneratorRepository)
+                                }
+                            }
+                        )
 
-                        val historyViewModel = remember {
-                            HistoryViewModel(
-                                app.historyRepository,
-                                app.getHistoryUseCase,
-                                app.toggleFavoriteUseCase,
-                                app.deleteHistoryUseCase
-                            )
-                        }
+                        val historyViewModel: HistoryViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    HistoryViewModel(
+                                        app.historyRepository,
+                                        app.getHistoryUseCase,
+                                        app.toggleFavoriteUseCase,
+                                        app.deleteHistoryUseCase
+                                    )
+                                }
+                            }
+                        )
 
-                        val favoritesViewModel = remember {
-                            FavoritesViewModel(
-                                app.favoriteRepository,
-                                app.toggleFavoriteUseCase
-                            )
-                        }
+                        val favoritesViewModel: FavoritesViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    FavoritesViewModel(
+                                        app.favoriteRepository,
+                                        app.toggleFavoriteUseCase
+                                    )
+                                }
+                            }
+                        )
 
-                        val myQrViewModel = remember {
-                            MyQrViewModel(app.qrGeneratorRepository)
-                        }
+                        val myQrViewModel: MyQrViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    MyQrViewModel(app.qrGeneratorRepository)
+                                }
+                            }
+                        )
 
-                        val settingsViewModel = remember {
-                            SettingsViewModel(
-                                app.getSettingsUseCase,
-                                app.updateSettingsUseCase
-                            )
-                        }
+                        val settingsViewModel: SettingsViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    SettingsViewModel(
+                                        app.getSettingsUseCase,
+                                        app.updateSettingsUseCase
+                                    )
+                                }
+                            }
+                        )
 
-                        val securityViewModel = remember {
-                            SecurityViewModel(
-                                app.getSettingsUseCase,
-                                app.updateSettingsUseCase
-                            )
-                        }
+                        val securityViewModel: SecurityViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    SecurityViewModel(
+                                        app.getSettingsUseCase,
+                                        app.updateSettingsUseCase
+                                    )
+                                }
+                            }
+                        )
 
-                        val analyticsViewModel = remember {
-                            AnalyticsViewModel(app.getAnalyticsSummaryUseCase)
-                        }
+                        val analyticsViewModel: AnalyticsViewModel = viewModel(
+                            factory = viewModelFactory {
+                                initializer {
+                                    AnalyticsViewModel(app.getAnalyticsSummaryUseCase)
+                                }
+                            }
+                        )
 
                         ScanFlowNavGraph(
                             navController = navController,

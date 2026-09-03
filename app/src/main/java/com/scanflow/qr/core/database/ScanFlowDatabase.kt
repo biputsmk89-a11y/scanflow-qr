@@ -50,7 +50,7 @@ abstract class ScanFlowDatabase : RoomDatabase() {
                     ScanFlowDatabase::class.java,
                     Constants.DATABASE_NAME
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigrationOnDowngrade()
                     .build()
                 INSTANCE = instance
                 instance
