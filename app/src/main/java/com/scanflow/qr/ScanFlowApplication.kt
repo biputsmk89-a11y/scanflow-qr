@@ -32,77 +32,89 @@ import com.scanflow.qr.domain.usecase.UpdateSettingsUseCase
 
 class ScanFlowApplication : Application() {
 
-    lateinit var database: ScanFlowDatabase
-        private set
-    lateinit var preferencesManager: PreferencesManager
-        private set
+    val database: ScanFlowDatabase by lazy {
+        ScanFlowDatabase.getInstance(this)
+    }
+
+    val preferencesManager: PreferencesManager by lazy {
+        PreferencesManager(this)
+    }
 
     // Repositories
-    lateinit var scanRepository: ScanRepository
-        private set
-    lateinit var historyRepository: HistoryRepository
-        private set
-    lateinit var qrGeneratorRepository: QrGeneratorRepository
-        private set
-    lateinit var favoriteRepository: FavoriteRepository
-        private set
-    lateinit var settingsRepository: SettingsRepository
-        private set
-    lateinit var authRepository: AuthRepository
-        private set
-    lateinit var syncRepository: SyncRepository
-        private set
+    val scanRepository: ScanRepository by lazy {
+        ScanRepositoryImpl(database)
+    }
+
+    val historyRepository: HistoryRepository by lazy {
+        HistoryRepositoryImpl(database)
+    }
+
+    val qrGeneratorRepository: QrGeneratorRepository by lazy {
+        QrGeneratorRepositoryImpl(this, database)
+    }
+
+    val favoriteRepository: FavoriteRepository by lazy {
+        FavoriteRepositoryImpl(database)
+    }
+
+    val settingsRepository: SettingsRepository by lazy {
+        SettingsRepositoryImpl(preferencesManager)
+    }
+
+    val authRepository: AuthRepository by lazy {
+        LocalGuestAuthRepository()
+    }
+
+    val syncRepository: SyncRepository by lazy {
+        LocalSyncRepository()
+    }
 
     // UseCases
-    lateinit var parseQrCodeUseCase: ParseQrCodeUseCase
-        private set
-    lateinit var saveScanResultUseCase: SaveScanResultUseCase
-        private set
-    lateinit var generateQrCodeUseCase: GenerateQrCodeUseCase
-        private set
-    lateinit var getHistoryUseCase: GetHistoryUseCase
-        private set
-    lateinit var toggleFavoriteUseCase: ToggleFavoriteUseCase
-        private set
-    lateinit var deleteHistoryUseCase: DeleteHistoryUseCase
-        private set
-    lateinit var exportQrCodeUseCase: ExportQrCodeUseCase
-        private set
-    lateinit var shareQrCodeUseCase: ShareQrCodeUseCase
-        private set
-    lateinit var assessUrlSecurityUseCase: AssessUrlSecurityUseCase
-        private set
-    lateinit var getSettingsUseCase: GetSettingsUseCase
-        private set
-    lateinit var updateSettingsUseCase: UpdateSettingsUseCase
-        private set
-    lateinit var getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase
-        private set
+    val parseQrCodeUseCase: ParseQrCodeUseCase by lazy {
+        ParseQrCodeUseCase(scanRepository)
+    }
 
-    override fun onCreate() {
-        super.onCreate()
-        database = ScanFlowDatabase.getInstance(this)
-        preferencesManager = PreferencesManager(this)
+    val saveScanResultUseCase: SaveScanResultUseCase by lazy {
+        SaveScanResultUseCase(scanRepository)
+    }
 
-        scanRepository = ScanRepositoryImpl(database)
-        historyRepository = HistoryRepositoryImpl(database)
-        qrGeneratorRepository = QrGeneratorRepositoryImpl(this, database)
-        favoriteRepository = FavoriteRepositoryImpl(database)
-        settingsRepository = SettingsRepositoryImpl(preferencesManager)
-        authRepository = LocalGuestAuthRepository()
-        syncRepository = LocalSyncRepository()
+    val generateQrCodeUseCase: GenerateQrCodeUseCase by lazy {
+        GenerateQrCodeUseCase(qrGeneratorRepository)
+    }
 
-        parseQrCodeUseCase = ParseQrCodeUseCase(scanRepository)
-        saveScanResultUseCase = SaveScanResultUseCase(scanRepository)
-        generateQrCodeUseCase = GenerateQrCodeUseCase(qrGeneratorRepository)
-        getHistoryUseCase = GetHistoryUseCase(historyRepository)
-        toggleFavoriteUseCase = ToggleFavoriteUseCase(historyRepository, qrGeneratorRepository)
-        deleteHistoryUseCase = DeleteHistoryUseCase(historyRepository)
-        exportQrCodeUseCase = ExportQrCodeUseCase(qrGeneratorRepository)
-        shareQrCodeUseCase = ShareQrCodeUseCase(qrGeneratorRepository)
-        assessUrlSecurityUseCase = AssessUrlSecurityUseCase()
-        getSettingsUseCase = GetSettingsUseCase(settingsRepository)
-        updateSettingsUseCase = UpdateSettingsUseCase(settingsRepository)
-        getAnalyticsSummaryUseCase = GetAnalyticsSummaryUseCase(historyRepository, qrGeneratorRepository)
+    val getHistoryUseCase: GetHistoryUseCase by lazy {
+        GetHistoryUseCase(historyRepository)
+    }
+
+    val toggleFavoriteUseCase: ToggleFavoriteUseCase by lazy {
+        ToggleFavoriteUseCase(historyRepository, qrGeneratorRepository)
+    }
+
+    val deleteHistoryUseCase: DeleteHistoryUseCase by lazy {
+        DeleteHistoryUseCase(historyRepository)
+    }
+
+    val exportQrCodeUseCase: ExportQrCodeUseCase by lazy {
+        ExportQrCodeUseCase(qrGeneratorRepository)
+    }
+
+    val shareQrCodeUseCase: ShareQrCodeUseCase by lazy {
+        ShareQrCodeUseCase(qrGeneratorRepository)
+    }
+
+    val assessUrlSecurityUseCase: AssessUrlSecurityUseCase by lazy {
+        AssessUrlSecurityUseCase()
+    }
+
+    val getSettingsUseCase: GetSettingsUseCase by lazy {
+        GetSettingsUseCase(settingsRepository)
+    }
+
+    val updateSettingsUseCase: UpdateSettingsUseCase by lazy {
+        UpdateSettingsUseCase(settingsRepository)
+    }
+
+    val getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase by lazy {
+        GetAnalyticsSummaryUseCase(historyRepository, qrGeneratorRepository)
     }
 }
