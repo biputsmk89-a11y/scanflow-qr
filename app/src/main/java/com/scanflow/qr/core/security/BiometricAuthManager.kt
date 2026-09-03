@@ -9,10 +9,15 @@ import androidx.fragment.app.FragmentActivity
 object BiometricAuthManager {
 
     fun isBiometricAvailable(context: Context): Boolean {
-        val biometricManager = BiometricManager.from(context)
-        return biometricManager.canAuthenticate(
-            BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
-        ) == BiometricManager.BIOMETRIC_SUCCESS
+        return try {
+            val biometricManager = BiometricManager.from(context)
+            biometricManager.canAuthenticate(
+                BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
+            ) == BiometricManager.BIOMETRIC_SUCCESS
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 
     fun authenticate(

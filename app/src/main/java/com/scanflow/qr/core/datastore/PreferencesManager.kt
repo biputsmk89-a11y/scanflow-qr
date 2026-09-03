@@ -32,11 +32,8 @@ class PreferencesManager(private val context: Context) {
 
     val settingsFlow: Flow<AppSettings> = context.dataStore.data
         .catch { exception ->
-            if (exception is java.io.IOException) {
-                emit(androidx.datastore.preferences.core.emptyPreferences())
-            } else {
-                throw exception
-            }
+            exception.printStackTrace()
+            emit(androidx.datastore.preferences.core.emptyPreferences())
         }
         .map { pref ->
             AppSettings(

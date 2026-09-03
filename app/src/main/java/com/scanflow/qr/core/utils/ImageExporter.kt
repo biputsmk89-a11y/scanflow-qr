@@ -69,7 +69,7 @@ object ImageExporter {
 
             FileProvider.getUriForFile(
                 context,
-                Constants.FILE_PROVIDER_AUTHORITY,
+                "${context.packageName}.fileprovider",
                 file
             )
         } catch (e: Exception) {
