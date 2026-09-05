@@ -45,11 +45,16 @@ interface SettingsRepository {
 
 interface AuthRepository {
     fun getCurrentUser(): Flow<AuthUser>
+    suspend fun signIn(email: String, password: String): Result<AuthUser>
+    suspend fun signUp(email: String, password: String, displayName: String): Result<AuthUser>
     suspend fun signInAsGuest(): AuthUser
     suspend fun signOut()
 }
 
 interface SyncRepository {
     fun getSyncStatus(): Flow<SyncStatus>
-    suspend fun requestSync()
+    fun getLastSyncTime(): Flow<Long?>
+    suspend fun requestSync(): Result<com.scanflow.qr.domain.model.SyncReport>
+    suspend fun backupToCloud(): Result<String>
+    suspend fun restoreFromCloud(uri: Uri? = null): Result<Pair<Int, Int>>
 }

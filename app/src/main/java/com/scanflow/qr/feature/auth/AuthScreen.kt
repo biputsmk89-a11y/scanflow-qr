@@ -26,7 +26,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +39,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +58,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.scanflow.qr.R
 import com.scanflow.qr.core.designsystem.CyanAccent
 import com.scanflow.qr.core.designsystem.Dimens
@@ -65,22 +67,25 @@ import com.scanflow.qr.core.designsystem.ScanFlowCard
 import com.scanflow.qr.core.designsystem.ScanFlowPrimaryButton
 import com.scanflow.qr.core.designsystem.ScanFlowSecondaryButton
 import com.scanflow.qr.core.designsystem.SuccessGreen
+import com.scanflow.qr.core.di.AppViewModelProvider
 
 @Composable
 fun AuthScreen(
     onContinueAsGuest: () -> Unit,
     onLoginSuccess: (String) -> Unit = { onContinueAsGuest() },
     onLearnPrivacy: () -> Unit = onContinueAsGuest,
-    onNavigateBack: (() -> Unit)? = null
+    onNavigateBack: (() -> Unit)? = null,
+    viewModel: AuthViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Login, 1: Guest Mode
 
-    var emailOrUser by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Login, 1: Daftar, 2: Mode Tamu
+
+    var email by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isSubmitting by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -111,7 +116,7 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            TextButton(onClick = onContinueAsGuest) {
+            TextButton(onClick = { viewModel.continueAsGuest(onContinueAsGuest) }) {
                 Text(
                     text = "Lewati / Tamu",
                     color = CyanAccent,
@@ -143,7 +148,7 @@ fun AuthScreen(
         Spacer(modifier = Modifier.height(Dimens.Spacing16))
 
         Text(
-            text = "ScanFlow QR Auth",
+            text = "ScanFlow QR Cloud",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
@@ -152,7 +157,7 @@ fun AuthScreen(
         Spacer(modifier = Modifier.height(Dimens.Spacing4))
 
         Text(
-            text = "Masuk untuk sinkronisasi riwayat & kode QR aman",
+            text = "Sinkronkan riwayat & kode QR Anda antar-perangkat",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -160,7 +165,7 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(Dimens.Spacing24))
 
-        // Tab Selector: Login Akun vs Tamu (Offline)
+        // Tab Selector: Login, Daftar, Mode Tamu
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -177,23 +182,18 @@ fun AuthScreen(
         ) {
             Tab(
                 selected = selectedTab == 0,
-                onClick = { selectedTab = 0 },
-                text = {
-                    Text(
-                        text = "Login Akun",
-                        fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
+                onClick = { selectedTab = 0; viewModel.clearError() },
+                text = { Text("Masuk", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) }
             )
             Tab(
                 selected = selectedTab == 1,
-                onClick = { selectedTab = 1 },
-                text = {
-                    Text(
-                        text = "Mode Tamu",
-                        fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal
-                    )
-                }
+                onClick = { selectedTab = 1; viewModel.clearError() },
+                text = { Text("Daftar", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) }
+            )
+            Tab(
+                selected = selectedTab == 2,
+                onClick = { selectedTab = 2; viewModel.clearError() },
+                text = { Text("Tamu", fontWeight = if (selectedTab == 2) FontWeight.Bold else FontWeight.Normal) }
             )
         }
 
@@ -204,7 +204,7 @@ fun AuthScreen(
             ScanFlowCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(Dimens.Spacing20)) {
                     Text(
-                        text = "Masuk ke Akun Anda",
+                        text = "Masuk ke Akun Cloud",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -213,20 +213,12 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(Dimens.Spacing16))
 
                     OutlinedTextField(
-                        value = emailOrUser,
-                        onValueChange = {
-                            emailOrUser = it
-                            errorMessage = null
-                        },
-                        label = { Text("Email atau Username") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Default.Email, contentDescription = null)
-                        },
+                        value = email,
+                        onValueChange = { email = it; viewModel.clearError() },
+                        label = { Text("Alamat Email") },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Email,
-                            imeAction = ImeAction.Next
-                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = ElectricBlue,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -238,31 +230,21 @@ fun AuthScreen(
 
                     OutlinedTextField(
                         value = password,
-                        onValueChange = {
-                            password = it
-                            errorMessage = null
-                        },
-                        label = { Text("Password") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Default.Lock, contentDescription = null)
-                        },
+                        onValueChange = { password = it; viewModel.clearError() },
+                        label = { Text("Kata Sandi") },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
                                     imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle password"
+                                    contentDescription = null
                                 )
                             }
                         },
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Password,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = { focusManager.clearFocus() }
-                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = ElectricBlue,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
@@ -270,10 +252,10 @@ fun AuthScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    if (errorMessage != null) {
+                    if (uiState.errorMessage != null) {
                         Spacer(modifier = Modifier.height(Dimens.Spacing8))
                         Text(
-                            text = errorMessage ?: "",
+                            text = uiState.errorMessage ?: "",
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
@@ -282,15 +264,15 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(Dimens.Spacing20))
 
                     ScanFlowPrimaryButton(
-                        text = if (isSubmitting) "Memproses Masuk..." else "Masuk ke ScanFlow",
+                        text = if (uiState.isLoading) "Memverifikasi Akun..." else "Masuk ke ScanFlow",
                         onClick = {
                             focusManager.clearFocus()
-                            if (emailOrUser.isBlank()) {
-                                errorMessage = "Silakan masukkan email atau username Anda"
-                            } else {
-                                isSubmitting = true
-                                onLoginSuccess(emailOrUser.trim())
-                            }
+                            viewModel.signIn(
+                                email = email,
+                                pass = password,
+                                onSuccess = { user -> onLoginSuccess(user.displayName ?: user.email ?: "User") },
+                                onError = {}
+                            )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         gradient = true
@@ -303,11 +285,113 @@ fun AuthScreen(
                         text = "Demo Akun: user@scanflow.app",
                         icon = Icons.Default.Person,
                         onClick = {
-                            emailOrUser = "user@scanflow.app"
+                            email = "user@scanflow.app"
                             password = "password123"
-                            onLoginSuccess("user@scanflow.app")
+                            viewModel.signIn(
+                                email = "user@scanflow.app",
+                                pass = "password123",
+                                onSuccess = { user -> onLoginSuccess(user.displayName ?: "User") },
+                                onError = {}
+                            )
                         },
                         modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        } else if (selectedTab == 1) {
+            // Sign Up Form Card
+            ScanFlowCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(Dimens.Spacing20)) {
+                    Text(
+                        text = "Daftar Akun Baru",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(Dimens.Spacing16))
+
+                    OutlinedTextField(
+                        value = displayName,
+                        onValueChange = { displayName = it; viewModel.clearError() },
+                        label = { Text("Nama Lengkap") },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Person, contentDescription = null) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ElectricBlue,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it; viewModel.clearError() },
+                        label = { Text("Alamat Email") },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Email, contentDescription = null) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ElectricBlue,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it; viewModel.clearError() },
+                        label = { Text("Kata Sandi (Min. 6 Karakter)") },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Lock, contentDescription = null) },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ElectricBlue,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    if (uiState.errorMessage != null) {
+                        Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                        Text(
+                            text = uiState.errorMessage ?: "",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(Dimens.Spacing20))
+
+                    ScanFlowPrimaryButton(
+                        text = if (uiState.isLoading) "Mendaftarkan Akun..." else "Buat Akun ScanFlow",
+                        onClick = {
+                            focusManager.clearFocus()
+                            viewModel.signUp(
+                                email = email,
+                                pass = password,
+                                displayName = displayName,
+                                onSuccess = { user -> onLoginSuccess(user.displayName ?: user.email ?: "User") },
+                                onError = {}
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        gradient = true
                     )
                 }
             }
@@ -334,7 +418,7 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(Dimens.Spacing12))
 
                     Text(
-                        text = "Gunakan aplikasi ScanFlow QR secara offline tanpa perlu membuat akun atau login internet. Semua riwayat pindaian dan QR code yang Anda buat akan tersimpan aman hanya di penyimpanan lokal HP Anda.",
+                        text = "Gunakan aplikasi ScanFlow QR secara offline tanpa akun. Semua riwayat pindaian dan QR code yang Anda buat akan tersimpan aman di penyimpanan lokal HP Anda.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -343,7 +427,7 @@ fun AuthScreen(
 
                     ScanFlowPrimaryButton(
                         text = "Lanjutkan sebagai Tamu",
-                        onClick = onContinueAsGuest,
+                        onClick = { viewModel.continueAsGuest(onContinueAsGuest) },
                         modifier = Modifier.fillMaxWidth(),
                         gradient = true
                     )
@@ -357,13 +441,13 @@ fun AuthScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            androidx.compose.material3.HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
             Text(
                 text = " Keamanan & Privasi ",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            androidx.compose.material3.HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
+            HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
         }
 
         Spacer(modifier = Modifier.height(Dimens.Spacing16))
@@ -378,7 +462,7 @@ fun AuthScreen(
         Spacer(modifier = Modifier.height(Dimens.Spacing16))
 
         Text(
-            text = "Data Anda dienkripsi dan diproses secara aman di perangkat lokal.",
+            text = "Data kredensial diamankan dengan enkripsi SHA-256 dan token sesi terverifikasi.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

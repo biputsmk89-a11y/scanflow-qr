@@ -22,7 +22,17 @@ data class AuthUser(
     val id: String,
     val email: String?,
     val displayName: String?,
-    val isGuest: Boolean = true
+    val isGuest: Boolean = true,
+    val token: String? = null,
+    val lastLoginAt: Long = System.currentTimeMillis()
+)
+
+data class SyncReport(
+    val success: Boolean,
+    val syncedScansCount: Int = 0,
+    val syncedQrsCount: Int = 0,
+    val message: String = "",
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 enum class SyncStatus {

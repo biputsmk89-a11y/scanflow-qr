@@ -30,10 +30,16 @@ import com.scanflow.qr.domain.usecase.ShareQrCodeUseCase
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
 import com.scanflow.qr.domain.usecase.UpdateSettingsUseCase
 
+import com.scanflow.qr.core.di.AppContainer
+import com.scanflow.qr.core.di.DefaultAppContainer
+
 class ScanFlowApplication : Application() {
+
+    lateinit var container: AppContainer
 
     override fun onCreate() {
         super.onCreate()
+        container = DefaultAppContainer(this)
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             android.util.Log.e("ScanFlowApplication", "Uncaught exception on thread ${thread.name}: ${throwable.message}", throwable)
@@ -41,89 +47,29 @@ class ScanFlowApplication : Application() {
         }
     }
 
-    val database: ScanFlowDatabase by lazy {
-        ScanFlowDatabase.getInstance(this)
-    }
-
-    val preferencesManager: PreferencesManager by lazy {
-        PreferencesManager(this)
-    }
+    val database: ScanFlowDatabase get() = container.database
+    val preferencesManager: PreferencesManager get() = container.preferencesManager
 
     // Repositories
-    val scanRepository: ScanRepository by lazy {
-        ScanRepositoryImpl(database)
-    }
-
-    val historyRepository: HistoryRepository by lazy {
-        HistoryRepositoryImpl(database)
-    }
-
-    val qrGeneratorRepository: QrGeneratorRepository by lazy {
-        QrGeneratorRepositoryImpl(this, database)
-    }
-
-    val favoriteRepository: FavoriteRepository by lazy {
-        FavoriteRepositoryImpl(database)
-    }
-
-    val settingsRepository: SettingsRepository by lazy {
-        SettingsRepositoryImpl(preferencesManager)
-    }
-
-    val authRepository: AuthRepository by lazy {
-        LocalGuestAuthRepository()
-    }
-
-    val syncRepository: SyncRepository by lazy {
-        LocalSyncRepository()
-    }
+    val scanRepository: ScanRepository get() = container.scanRepository
+    val historyRepository: HistoryRepository get() = container.historyRepository
+    val qrGeneratorRepository: QrGeneratorRepository get() = container.qrGeneratorRepository
+    val favoriteRepository: FavoriteRepository get() = container.favoriteRepository
+    val settingsRepository: SettingsRepository get() = container.settingsRepository
+    val authRepository: AuthRepository get() = container.authRepository
+    val syncRepository: SyncRepository get() = container.syncRepository
 
     // UseCases
-    val parseQrCodeUseCase: ParseQrCodeUseCase by lazy {
-        ParseQrCodeUseCase(scanRepository)
-    }
-
-    val saveScanResultUseCase: SaveScanResultUseCase by lazy {
-        SaveScanResultUseCase(scanRepository)
-    }
-
-    val generateQrCodeUseCase: GenerateQrCodeUseCase by lazy {
-        GenerateQrCodeUseCase(qrGeneratorRepository)
-    }
-
-    val getHistoryUseCase: GetHistoryUseCase by lazy {
-        GetHistoryUseCase(historyRepository)
-    }
-
-    val toggleFavoriteUseCase: ToggleFavoriteUseCase by lazy {
-        ToggleFavoriteUseCase(historyRepository, qrGeneratorRepository)
-    }
-
-    val deleteHistoryUseCase: DeleteHistoryUseCase by lazy {
-        DeleteHistoryUseCase(historyRepository)
-    }
-
-    val exportQrCodeUseCase: ExportQrCodeUseCase by lazy {
-        ExportQrCodeUseCase(qrGeneratorRepository)
-    }
-
-    val shareQrCodeUseCase: ShareQrCodeUseCase by lazy {
-        ShareQrCodeUseCase(qrGeneratorRepository)
-    }
-
-    val assessUrlSecurityUseCase: AssessUrlSecurityUseCase by lazy {
-        AssessUrlSecurityUseCase()
-    }
-
-    val getSettingsUseCase: GetSettingsUseCase by lazy {
-        GetSettingsUseCase(settingsRepository)
-    }
-
-    val updateSettingsUseCase: UpdateSettingsUseCase by lazy {
-        UpdateSettingsUseCase(settingsRepository)
-    }
-
-    val getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase by lazy {
-        GetAnalyticsSummaryUseCase(historyRepository, qrGeneratorRepository)
-    }
+    val parseQrCodeUseCase: ParseQrCodeUseCase get() = container.parseQrCodeUseCase
+    val saveScanResultUseCase: SaveScanResultUseCase get() = container.saveScanResultUseCase
+    val generateQrCodeUseCase: GenerateQrCodeUseCase get() = container.generateQrCodeUseCase
+    val getHistoryUseCase: GetHistoryUseCase get() = container.getHistoryUseCase
+    val toggleFavoriteUseCase: ToggleFavoriteUseCase get() = container.toggleFavoriteUseCase
+    val deleteHistoryUseCase: DeleteHistoryUseCase get() = container.deleteHistoryUseCase
+    val exportQrCodeUseCase: ExportQrCodeUseCase get() = container.exportQrCodeUseCase
+    val shareQrCodeUseCase: ShareQrCodeUseCase get() = container.shareQrCodeUseCase
+    val assessUrlSecurityUseCase: AssessUrlSecurityUseCase get() = container.assessUrlSecurityUseCase
+    val getSettingsUseCase: GetSettingsUseCase get() = container.getSettingsUseCase
+    val updateSettingsUseCase: UpdateSettingsUseCase get() = container.updateSettingsUseCase
+    val getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase get() = container.getAnalyticsSummaryUseCase
 }

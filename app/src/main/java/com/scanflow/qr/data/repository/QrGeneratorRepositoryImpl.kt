@@ -144,6 +144,14 @@ class LocalGuestAuthRepository : AuthRepository {
 
     override fun getCurrentUser(): Flow<AuthUser> = flowOf(guestUser)
 
+    override suspend fun signIn(email: String, password: String): Result<AuthUser> {
+        return Result.success(guestUser.copy(email = email, displayName = email.substringBefore("@")))
+    }
+
+    override suspend fun signUp(email: String, password: String, displayName: String): Result<AuthUser> {
+        return Result.success(guestUser.copy(email = email, displayName = displayName))
+    }
+
     override suspend fun signInAsGuest(): AuthUser = guestUser
 
     override suspend fun signOut() {}
@@ -152,5 +160,17 @@ class LocalGuestAuthRepository : AuthRepository {
 class LocalSyncRepository : SyncRepository {
     override fun getSyncStatus(): Flow<SyncStatus> = flowOf(SyncStatus.LOCAL_ONLY)
 
-    override suspend fun requestSync() {}
+    override fun getLastSyncTime(): Flow<Long?> = flowOf(null)
+
+    override suspend fun requestSync(): Result<com.scanflow.qr.domain.model.SyncReport> {
+        return Result.success(com.scanflow.qr.domain.model.SyncReport(success = true, message = "Local Mode"))
+    }
+
+    override suspend fun backupToCloud(): Result<String> {
+        return Result.success("local")
+    }
+
+    override suspend fun restoreFromCloud(uri: Uri?): Result<Pair<Int, Int>> {
+        return Result.success(0 to 0)
+    }
 }
