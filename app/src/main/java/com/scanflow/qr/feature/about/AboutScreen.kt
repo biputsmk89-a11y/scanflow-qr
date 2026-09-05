@@ -102,8 +102,8 @@ fun AboutScreen(
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Version 1.0.0 (Build 100)",
-                style = MaterialTheme.typography.bodySmall,
+                text = "Version ${com.scanflow.qr.BuildConfig.VERSION_NAME} (Build ${com.scanflow.qr.BuildConfig.VERSION_CODE})",
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
