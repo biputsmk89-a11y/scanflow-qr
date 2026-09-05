@@ -1,5 +1,7 @@
 package android.net
 
+import android.os.Parcel
+
 /**
  * Lightweight mock implementation of [Uri] for JVM local unit testing.
  * Avoids stub exception "Method parse in android.net.Uri not mocked".
@@ -26,4 +28,7 @@ class TestUri(private val uriString: String = "content://scanflow/test_uri") : U
     override fun getPort(): Int = -1
     override fun buildUpon(): Builder? = null
     override fun compareTo(other: Uri?): Int = 0
+
+    override fun describeContents(): Int = 0
+    override fun writeToParcel(dest: Parcel, flags: Int) {}
 }
