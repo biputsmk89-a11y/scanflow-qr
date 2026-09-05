@@ -77,4 +77,73 @@ object ImageExporter {
             null
         }
     }
+
+    fun saveSvgToStorage(
+        context: Context,
+        svgContent: String,
+        filename: String = "ScanFlow_Vector_${System.currentTimeMillis()}"
+    ): Uri? {
+        val resolver = context.contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "$filename.svg")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/svg+xml")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/ScanFlowQR")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        }
+
+        val collectionUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
+        } else {
+            MediaStore.Files.getContentUri("external")
+        }
+
+        val fileUri = resolver.insert(collectionUri, contentValues) ?: return null
+
+        return try {
+            val outputStream = resolver.openOutputStream(fileUri)
+            if (outputStream != null) {
+                outputStream.write(svgContent.toByteArray(Charsets.UTF_8))
+                outputStream.flush()
+                outputStream.close()
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                contentValues.clear()
+                contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                resolver.update(fileUri, contentValues, null, null)
+            }
+
+            fileUri
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    fun saveSvgToCache(
+        context: Context,
+        svgContent: String,
+        filename: String = "shared_vector_${System.currentTimeMillis()}.svg"
+    ): Uri? {
+        return try {
+            val imagesFolder = File(context.cacheDir, "images")
+            imagesFolder.mkdirs()
+            val file = File(imagesFolder, filename)
+            val stream = FileOutputStream(file)
+            stream.write(svgContent.toByteArray(Charsets.UTF_8))
+            stream.flush()
+            stream.close()
+
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }

@@ -77,6 +77,28 @@ class QrGeneratorRepositoryImpl(
     override suspend fun cacheQrForSharing(bitmap: Bitmap, filename: String): Uri? {
         return ImageExporter.saveBitmapToCache(context, bitmap, filename)
     }
+
+    override fun generateQrSvg(content: String, config: QrStyleConfig): String? {
+        return QrCodeGenerator.generateQrSvg(content, config)
+    }
+
+    override suspend fun exportQrSvg(svgContent: String, title: String): Uri? {
+        return ImageExporter.saveSvgToStorage(context, svgContent, title)
+    }
+
+    override suspend fun cacheQrSvgForSharing(svgContent: String, filename: String): Uri? {
+        return ImageExporter.saveSvgToCache(context, svgContent, filename)
+    }
+
+    override suspend fun exportQrPdf(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri? {
+        val pdf = com.scanflow.qr.core.utils.PdfDocumentExporter.createPdfDocument(title, type, content, bitmap)
+        return com.scanflow.qr.core.utils.PdfDocumentExporter.savePdfToStorage(context, pdf, filename)
+    }
+
+    override suspend fun cacheQrPdfForSharing(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri? {
+        val pdf = com.scanflow.qr.core.utils.PdfDocumentExporter.createPdfDocument(title, type, content, bitmap)
+        return com.scanflow.qr.core.utils.PdfDocumentExporter.savePdfToCache(context, pdf, filename)
+    }
 }
 
 class FavoriteRepositoryImpl(

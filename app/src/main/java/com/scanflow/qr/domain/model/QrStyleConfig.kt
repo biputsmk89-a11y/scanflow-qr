@@ -37,3 +37,33 @@ enum class SecurityLevel {
     DANGEROUS,
     UNKNOWN
 }
+
+enum class QrExportFormat(
+    val extension: String,
+    val mimeType: String,
+    val displayName: String,
+    val badge: String,
+    val description: String
+) {
+    PNG(
+        extension = "png",
+        mimeType = "image/png",
+        displayName = "PNG (Raster HD)",
+        badge = "Gambar",
+        description = "Format standar gambar tajam untuk tampilan layar, media sosial, dan chat."
+    ),
+    SVG(
+        extension = "svg",
+        mimeType = "image/svg+xml",
+        displayName = "SVG (Vektor Industri)",
+        badge = "Vektor Murni",
+        description = "Resolusi tak terbatas. Tidak akan pernah pecah untuk spanduk, banner, atau desain Figma/Illustrator."
+    ),
+    PDF(
+        extension = "pdf",
+        mimeType = "application/pdf",
+        displayName = "PDF (Dokumen Siap Cetak)",
+        badge = "Format A4",
+        description = "Tata letak siap cetak ukuran A4 berbingkai rapi lengkap dengan kop judul dan petunjuk scan."
+    )
+}

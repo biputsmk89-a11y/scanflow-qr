@@ -118,4 +118,9 @@ class FakeQrGeneratorRepository : QrGeneratorRepository {
 
     override suspend fun exportQrToGallery(bitmap: Bitmap, title: String): Uri? = null
     override suspend fun cacheQrForSharing(bitmap: Bitmap, filename: String): Uri? = null
+    override fun generateQrSvg(content: String, config: QrStyleConfig): String? = null
+    override suspend fun exportQrSvg(svgContent: String, title: String): Uri? = null
+    override suspend fun cacheQrSvgForSharing(svgContent: String, filename: String): Uri? = null
+    override suspend fun exportQrPdf(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri? = null
+    override suspend fun cacheQrPdfForSharing(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri? = null
 }

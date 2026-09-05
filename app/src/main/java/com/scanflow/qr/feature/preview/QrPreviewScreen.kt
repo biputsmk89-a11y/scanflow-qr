@@ -17,24 +17,39 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.IosShare
+import androidx.compose.material.icons.filled.PictureAsPdf
+import androidx.compose.material.icons.filled.Polyline
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,6 +74,7 @@ import com.scanflow.qr.core.designsystem.ScanFlowPrimaryButton
 import com.scanflow.qr.core.designsystem.ScanFlowSecondaryButton
 import com.scanflow.qr.core.designsystem.SectionHeader
 import com.scanflow.qr.domain.model.QrCornerStyle
+import com.scanflow.qr.domain.model.QrExportFormat
 import com.scanflow.qr.domain.model.QrPatternStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -77,6 +93,13 @@ fun QrPreviewScreen(
 
     LaunchedEffect(uiState.exportSuccessMessage) {
         uiState.exportSuccessMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.dismissSuccessMessage()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
         }
     }
@@ -87,7 +110,7 @@ fun QrPreviewScreen(
                 title = { Text("QR Studio & Preview", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -125,9 +148,9 @@ fun QrPreviewScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("QR Code not found", style = MaterialTheme.typography.titleMedium)
+                Text("Kode QR tidak ditemukan", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(16.dp))
-                ScanFlowSecondaryButton(text = "Go Back", onClick = onNavigateBack)
+                ScanFlowSecondaryButton(text = "Kembali", onClick = onNavigateBack)
             }
             return@Scaffold
         }
@@ -175,7 +198,7 @@ fun QrPreviewScreen(
                     )
                     Spacer(modifier = Modifier.height(Dimens.Spacing4))
                     Text(
-                        text = "${qr.type.displayName} · High Resolution",
+                        text = "${qr.type.displayName} · Siap Cetak & Ekspor Multi-Format",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -185,7 +208,7 @@ fun QrPreviewScreen(
             Spacer(modifier = Modifier.height(Dimens.Spacing24))
 
             // Customization: Foreground Color Picker
-            SectionHeader(title = "Foreground Color")
+            SectionHeader(title = "Warna Utama (Foreground)")
             Spacer(modifier = Modifier.height(Dimens.Spacing8))
             val colors = listOf(
                 Color.Black,
@@ -221,7 +244,7 @@ fun QrPreviewScreen(
             Spacer(modifier = Modifier.height(Dimens.Spacing20))
 
             // Customization: Dot Pattern Styles
-            SectionHeader(title = "Pattern Style")
+            SectionHeader(title = "Gaya Pola Titik (Pattern Style)")
             Spacer(modifier = Modifier.height(Dimens.Spacing8))
             Row(
                 modifier = Modifier
@@ -241,7 +264,7 @@ fun QrPreviewScreen(
             Spacer(modifier = Modifier.height(Dimens.Spacing20))
 
             // Customization: Corner Eye Styles
-            SectionHeader(title = "Corner Eye Style")
+            SectionHeader(title = "Gaya Sudut Sensor (Corner Eye Style)")
             Spacer(modifier = Modifier.height(Dimens.Spacing8))
             Row(
                 modifier = Modifier
@@ -260,11 +283,11 @@ fun QrPreviewScreen(
 
             Spacer(modifier = Modifier.height(Dimens.Spacing28))
 
-            // Export and Share Actions
+            // Multi-Format Export and Share Actions
             ScanFlowPrimaryButton(
-                text = "Save to Gallery (PNG)",
+                text = "📦 Simpan & Ekspor Berkas (PNG/SVG/PDF)",
                 icon = Icons.Default.Download,
-                onClick = { viewModel.exportToGallery(context) },
+                onClick = { viewModel.setExportSheetVisible(true) },
                 modifier = Modifier.fillMaxWidth(),
                 gradient = true
             )
@@ -272,13 +295,223 @@ fun QrPreviewScreen(
             Spacer(modifier = Modifier.height(Dimens.Spacing12))
 
             ScanFlowSecondaryButton(
-                text = "Share QR Code",
+                text = "Bagikan Cepat (PNG)",
                 icon = Icons.Default.Share,
-                onClick = { viewModel.shareQr(context) },
+                onClick = { viewModel.shareQr(context, QrExportFormat.PNG) },
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(Dimens.Spacing32))
+        }
+
+        // Modal Bottom Sheet: Multi-Format Vector & Printable Document Export
+        if (uiState.isExportSheetVisible) {
+            val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+            ModalBottomSheet(
+                onDismissRequest = { viewModel.setExportSheetVisible(false) },
+                sheetState = sheetState,
+                containerColor = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Dimens.Spacing20)
+                        .padding(bottom = Dimens.Spacing32)
+                ) {
+                    // Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Format Ekspor & Cetak Industri",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Pilih format sesuai kebutuhan publikasi Anda",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        IconButton(onClick = { viewModel.setExportSheetVisible(false) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Tutup")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(Dimens.Spacing16))
+
+                    // 1. Format Option: SVG (Vector)
+                    ExportFormatCard(
+                        title = "SVG (Vektor Murni Industri)",
+                        badge = "Resolusi Tak Terbatas",
+                        badgeColor = Color(0xFF00C853),
+                        description = "Resolusi tak terbatas tanpa pecah. Sangat disarankan untuk cetak spanduk, banner, sablon, laser cutting, dan desain grafis (CorelDraw, Illustrator, Figma).",
+                        icon = Icons.Default.Polyline,
+                        onDownload = {
+                            viewModel.setExportSheetVisible(false)
+                            viewModel.exportQr(QrExportFormat.SVG)
+                        },
+                        onShare = {
+                            viewModel.setExportSheetVisible(false)
+                            viewModel.shareQr(context, QrExportFormat.SVG)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                    // 2. Format Option: PDF (A4 Document)
+                    ExportFormatCard(
+                        title = "PDF (Dokumen Siap Cetak A4)",
+                        badge = "Format Cetak A4",
+                        badgeColor = Color(0xFF0066FF),
+                        description = "Halaman dokumen rapi berukuran standar A4 berbingkai lengkap dengan judul, petunjuk pemindaian, dan batas potong untuk dipajang di kelas/kantor.",
+                        icon = Icons.Default.PictureAsPdf,
+                        onDownload = {
+                            viewModel.setExportSheetVisible(false)
+                            viewModel.exportQr(QrExportFormat.PDF)
+                        },
+                        onShare = {
+                            viewModel.setExportSheetVisible(false)
+                            viewModel.shareQr(context, QrExportFormat.PDF)
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                    // 3. Format Option: PNG (Raster HD)
+                    ExportFormatCard(
+                        title = "PNG (Gambar Raster HD)",
+                        badge = "Standar Layar",
+                        badgeColor = Color(0xFF8B5CF6),
+                        description = "Format standar gambar tajam untuk dikirim melalui WhatsApp, diunggah ke media sosial, atau disimpan di galeri foto smartphone.",
+                        icon = Icons.Default.Image,
+                        onDownload = {
+                            viewModel.setExportSheetVisible(false)
+                            viewModel.exportQr(QrExportFormat.PNG)
+                        },
+                        onShare = {
+                            viewModel.setExportSheetVisible(false)
+                            viewModel.shareQr(context, QrExportFormat.PNG)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExportFormatCard(
+    title: String,
+    badge: String,
+    badgeColor: Color,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onDownload: () -> Unit,
+    onShare: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = badgeColor.copy(alpha = 0.15f),
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = badgeColor,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = badgeColor.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = badge,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = badgeColor,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilledTonalButton(
+                    onClick = onDownload,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "Unduh", style = MaterialTheme.typography.labelMedium)
+                }
+
+                OutlinedButton(
+                    onClick = onShare,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.IosShare,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "Bagikan", style = MaterialTheme.typography.labelMedium)
+                }
+            }
         }
     }
 }

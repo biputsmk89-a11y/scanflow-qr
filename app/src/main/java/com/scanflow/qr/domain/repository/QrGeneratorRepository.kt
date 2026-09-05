@@ -23,6 +23,11 @@ interface QrGeneratorRepository {
     suspend fun deleteUserQr(id: Long)
     suspend fun exportQrToGallery(bitmap: Bitmap, title: String): Uri?
     suspend fun cacheQrForSharing(bitmap: Bitmap, filename: String): Uri?
+    fun generateQrSvg(content: String, config: QrStyleConfig): String?
+    suspend fun exportQrSvg(svgContent: String, title: String): Uri?
+    suspend fun cacheQrSvgForSharing(svgContent: String, filename: String): Uri?
+    suspend fun exportQrPdf(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri?
+    suspend fun cacheQrPdfForSharing(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri?
 }
 
 interface FavoriteRepository {
