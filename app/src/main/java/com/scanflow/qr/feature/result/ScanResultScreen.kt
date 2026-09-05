@@ -23,8 +23,10 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.PersonAdd
@@ -330,6 +332,9 @@ fun getTypeIcon(type: QrType): ImageVector {
         QrType.PHONE -> Icons.Default.Call
         QrType.SMS -> Icons.Default.Sms
         QrType.LOCATION -> Icons.Default.LocationOn
+        QrType.CALENDAR -> Icons.Default.Event
+        QrType.PAYMENT -> Icons.Default.Payment
+        QrType.SOCIAL -> Icons.Default.Share
         else -> Icons.Default.QrCode
     }
 }
@@ -342,6 +347,8 @@ fun getPrimaryActionLabel(type: QrType): String {
         QrType.SMS -> "Send SMS"
         QrType.LOCATION -> "Open Location in Maps"
         QrType.CONTACT -> "Save Contact"
+        QrType.CALENDAR -> "Add to Calendar"
+        QrType.PAYMENT -> "Open Payment / Pay Now"
         QrType.WIFI -> "Connect / Configure Wi-Fi"
         else -> "Copy Raw Text"
     }
@@ -355,6 +362,8 @@ fun getPrimaryActionIcon(type: QrType): ImageVector {
         QrType.SMS -> Icons.Default.Sms
         QrType.LOCATION -> Icons.Default.LocationOn
         QrType.CONTACT -> Icons.Default.PersonAdd
+        QrType.CALENDAR -> Icons.Default.Event
+        QrType.PAYMENT -> Icons.Default.Payment
         QrType.WIFI -> Icons.Default.Wifi
         else -> Icons.Default.ContentCopy
     }

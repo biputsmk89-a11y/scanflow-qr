@@ -128,12 +128,15 @@ object QrCodeParser {
         var type = "WPA"
         var hidden = false
 
-        val body = content.substringAfter("WIFI:").substringBefore(";;")
-        val parts = body.split(";")
+        // Remove prefix and trailing delimiters safely
+        val body = content.removePrefix("WIFI:").removePrefix("wifi:")
+            .removeSuffix(";;").removeSuffix(";")
+        // Split by semicolon not preceded by an escape backslash
+        val parts = body.split(Regex("(?<!\\\\);"))
         for (part in parts) {
             when {
-                part.startsWith("S:") -> ssid = part.substring(2)
-                part.startsWith("P:") -> password = part.substring(2)
+                part.startsWith("S:") -> ssid = unescapeWifi(part.substring(2))
+                part.startsWith("P:") -> password = unescapeWifi(part.substring(2))
                 part.startsWith("T:") -> type = part.substring(2)
                 part.startsWith("H:") -> hidden = part.substring(2).equals("true", ignoreCase = true)
             }
@@ -152,6 +155,13 @@ object QrCodeParser {
             format = format,
             isSecure = true
         )
+    }
+
+    private fun unescapeWifi(value: String): String {
+        return value.replace("\\;", ";")
+            .replace("\\:", ":")
+            .replace("\\\\", "\\")
+            .replace("\\,", ",")
     }
 
     private fun parseContact(content: String, format: String): QrCodeData {
@@ -212,16 +222,20 @@ object QrCodeParser {
                 val query = uriStr.substringAfter("?")
                 val params = query.split("&")
                 for (param in params) {
-                    if (param.startsWith("subject=")) subject = param.substring(8)
-                    if (param.startsWith("body=")) body = param.substring(5)
+                    if (param.startsWith("subject=", ignoreCase = true)) {
+                        subject = decodeUrlComponent(param.substring(8))
+                    }
+                    if (param.startsWith("body=", ignoreCase = true)) {
+                        body = decodeUrlComponent(param.substring(5))
+                    }
                 }
             }
         } else if (content.startsWith("MATMSG:", ignoreCase = true)) {
             val parts = content.substring(7).split(";")
             for (part in parts) {
-                if (part.startsWith("TO:")) email = part.substring(3)
-                if (part.startsWith("SUB:")) subject = part.substring(4)
-                if (part.startsWith("BODY:")) body = part.substring(5)
+                if (part.startsWith("TO:", ignoreCase = true)) email = part.substring(3)
+                if (part.startsWith("SUB:", ignoreCase = true)) subject = part.substring(4)
+                if (part.startsWith("BODY:", ignoreCase = true)) body = part.substring(5)
             }
         }
 
@@ -246,8 +260,8 @@ object QrCodeParser {
         if (content.startsWith("sms:", ignoreCase = true)) {
             val data = content.substring(4)
             phone = data.substringBefore("?")
-            if (data.contains("body=")) {
-                message = data.substringAfter("body=")
+            if (data.contains("body=", ignoreCase = true)) {
+                message = decodeUrlComponent(data.substringAfter("body="))
             }
         } else if (content.startsWith("smsto:", ignoreCase = true)) {
             val data = content.substring(6)
@@ -258,9 +272,9 @@ object QrCodeParser {
         return QrCodeData(
             rawContent = content,
             type = QrType.SMS,
-            title = "SMS to $phone",
+            title = if (phone.isNotEmpty()) "SMS to $phone" else "SMS Message",
             displayDetails = buildMap {
-                put("Phone Number", phone)
+                if (phone.isNotEmpty()) put("Phone Number", phone)
                 if (message.isNotEmpty()) put("Message", message)
             },
             format = format,
@@ -287,14 +301,29 @@ object QrCodeParser {
     private fun parseCalendar(content: String, format: String): QrCodeData {
         var title = "Calendar Event"
         var location = ""
+        var description = ""
+        var dtStart = ""
+        var dtEnd = ""
 
         val lines = content.lines()
         for (line in lines) {
+            val trimmedLine = line.trim()
             when {
-                line.startsWith("SUMMARY:", ignoreCase = true) -> {
-                    title = line.substring(8).trim()
+                trimmedLine.startsWith("SUMMARY:", ignoreCase = true) -> {
+                    title = trimmedLine.substring(8).trim()
                 }
-                line.startsWith("LOCATION:", ignoreCase = true) -> location = line.substring(9).trim()
+                trimmedLine.startsWith("LOCATION:", ignoreCase = true) -> {
+                    location = trimmedLine.substring(9).trim()
+                }
+                trimmedLine.startsWith("DESCRIPTION:", ignoreCase = true) -> {
+                    description = trimmedLine.substring(12).trim()
+                }
+                trimmedLine.startsWith("DTSTART:", ignoreCase = true) || trimmedLine.startsWith("DTSTART;") -> {
+                    dtStart = trimmedLine.substringAfter(":").trim()
+                }
+                trimmedLine.startsWith("DTEND:", ignoreCase = true) || trimmedLine.startsWith("DTEND;") -> {
+                    dtEnd = trimmedLine.substringAfter(":").trim()
+                }
             }
         }
 
@@ -305,6 +334,9 @@ object QrCodeParser {
             displayDetails = buildMap {
                 put("Event Title", title)
                 if (location.isNotEmpty()) put("Location", location)
+                if (description.isNotEmpty()) put("Description", description)
+                if (dtStart.isNotEmpty()) put("Start Time", dtStart)
+                if (dtEnd.isNotEmpty()) put("End Time", dtEnd)
             },
             format = format,
             isSecure = true
@@ -312,23 +344,78 @@ object QrCodeParser {
     }
 
     private fun parsePayment(content: String, format: String): QrCodeData {
-        val paymentType = when {
-            content.startsWith("upi://", ignoreCase = true) -> "UPI Payment"
-            content.startsWith("bitcoin:", ignoreCase = true) -> "Bitcoin Payment"
-            content.startsWith("ethereum:", ignoreCase = true) -> "Ethereum Payment"
-            content.startsWith("solana:", ignoreCase = true) -> "Solana Payment"
-            content.contains("paypal.me", ignoreCase = true) -> "PayPal Transfer"
-            else -> "Payment Link"
+        val paymentType: String
+        val details = mutableMapOf<String, String>()
+
+        when {
+            content.startsWith("upi://", ignoreCase = true) -> {
+                paymentType = "UPI Payment"
+                details["Type"] = paymentType
+                val query = content.substringAfter("?", "")
+                if (query.isNotEmpty()) {
+                    query.split("&").forEach { param ->
+                        val key = param.substringBefore("=").lowercase()
+                        val value = decodeUrlComponent(param.substringAfter("=", ""))
+                        when (key) {
+                            "pa" -> details["UPI ID / VPA"] = value
+                            "pn" -> details["Payee Name"] = value
+                            "am" -> details["Amount"] = value
+                            "cu" -> details["Currency"] = value
+                        }
+                    }
+                }
+                if (!details.containsKey("UPI ID / VPA")) {
+                    details["Payload"] = content
+                }
+            }
+            content.startsWith("bitcoin:", ignoreCase = true) -> {
+                paymentType = "Bitcoin Payment"
+                val address = content.removePrefix("bitcoin:").removePrefix("BITCOIN:").substringBefore("?")
+                details["Type"] = paymentType
+                details["Wallet Address"] = address
+            }
+            content.startsWith("ethereum:", ignoreCase = true) -> {
+                paymentType = "Ethereum Payment"
+                val address = content.removePrefix("ethereum:").removePrefix("ETHEREUM:").substringBefore("?")
+                details["Type"] = paymentType
+                details["Wallet Address"] = address
+            }
+            content.startsWith("solana:", ignoreCase = true) -> {
+                paymentType = "Solana Payment"
+                val address = content.removePrefix("solana:").removePrefix("SOLANA:").substringBefore("?")
+                details["Type"] = paymentType
+                details["Wallet Address"] = address
+            }
+            content.contains("paypal.me", ignoreCase = true) -> {
+                paymentType = "PayPal Transfer"
+                val username = content.substringAfter("paypal.me/").substringBefore("?")
+                details["Type"] = paymentType
+                details["PayPal Handle"] = username
+                details["Link"] = content
+            }
+            else -> {
+                paymentType = "Payment Link"
+                details["Type"] = paymentType
+                details["Address/Payload"] = content
+            }
         }
 
         return QrCodeData(
             rawContent = content,
             type = QrType.PAYMENT,
             title = paymentType,
-            displayDetails = mapOf("Type" to paymentType, "Address/Payload" to content),
+            displayDetails = details,
             format = format,
             isSecure = true
         )
+    }
+
+    private fun decodeUrlComponent(value: String): String {
+        return try {
+            java.net.URLDecoder.decode(value, "UTF-8")
+        } catch (e: Exception) {
+            value
+        }
     }
 
     private fun isSocialUrl(url: String): Boolean {

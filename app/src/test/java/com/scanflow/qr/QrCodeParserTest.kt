@@ -39,6 +39,17 @@ class QrCodeParserTest {
     }
 
     @Test
+    fun `parse wifi payload unescapes special characters and tolerates single semicolon`() {
+        val raw = "WIFI:T:WPA;S:Office\\;Guest;P:Pass\\:123;H:true;"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.WIFI)
+        assertThat(result.displayDetails["Network (SSID)"]).isEqualTo("Office;Guest")
+        assertThat(result.displayDetails["Password"]).isEqualTo("Pass:123")
+        assertThat(result.displayDetails["Hidden Network"]).isEqualTo("Yes")
+    }
+
+    @Test
     fun `parse vCard payload correctly parses contact info`() {
         val raw = """
             BEGIN:VCARD
@@ -115,6 +126,9 @@ class QrCodeParserTest {
             BEGIN:VEVENT
             SUMMARY:Quarterly Tech Sprint
             LOCATION:Meeting Room Alpha
+            DESCRIPTION:Review and roadmap planning
+            DTSTART:20261015T090000
+            DTEND:20261015T120000
             END:VEVENT
         """.trimIndent()
         val result = QrCodeParser.parse(raw)
@@ -122,19 +136,27 @@ class QrCodeParserTest {
         assertThat(result.type).isEqualTo(QrType.CALENDAR)
         assertThat(result.title).isEqualTo("Quarterly Tech Sprint")
         assertThat(result.displayDetails["Location"]).isEqualTo("Meeting Room Alpha")
+        assertThat(result.displayDetails["Description"]).isEqualTo("Review and roadmap planning")
+        assertThat(result.displayDetails["Start Time"]).isEqualTo("20261015T090000")
+        assertThat(result.displayDetails["End Time"]).isEqualTo("20261015T120000")
     }
 
     @Test
     fun `parse crypto and upi payment payloads correctly identifies PAYMENT type`() {
-        val rawUpi = "upi://pay?pa=merchant@upi&pn=ScanFlow"
+        val rawUpi = "upi://pay?pa=merchant@upi&pn=ScanFlow&am=100.00&cu=INR"
         val resultUpi = QrCodeParser.parse(rawUpi)
         assertThat(resultUpi.type).isEqualTo(QrType.PAYMENT)
         assertThat(resultUpi.title).isEqualTo("UPI Payment")
+        assertThat(resultUpi.displayDetails["UPI ID / VPA"]).isEqualTo("merchant@upi")
+        assertThat(resultUpi.displayDetails["Payee Name"]).isEqualTo("ScanFlow")
+        assertThat(resultUpi.displayDetails["Amount"]).isEqualTo("100.00")
+        assertThat(resultUpi.displayDetails["Currency"]).isEqualTo("INR")
 
         val rawBtc = "bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
         val resultBtc = QrCodeParser.parse(rawBtc)
         assertThat(resultBtc.type).isEqualTo(QrType.PAYMENT)
         assertThat(resultBtc.title).isEqualTo("Bitcoin Payment")
+        assertThat(resultBtc.displayDetails["Wallet Address"]).isEqualTo("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa")
     }
 
     @Test

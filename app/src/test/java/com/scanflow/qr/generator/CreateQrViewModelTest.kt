@@ -126,7 +126,7 @@ class CreateQrViewModelTest {
     }
 
     @Test
-    fun `generateAndSaveQr with EMAIL formats mailto payload`() = runTest(testDispatcher) {
+    fun `generateAndSaveQr with EMAIL formats mailto payload with url encoding`() = runTest(testDispatcher) {
         var generatedId: Long? = null
         viewModel.selectType(QrType.EMAIL)
         viewModel.updateField {
@@ -144,6 +144,95 @@ class CreateQrViewModelTest {
         val savedQr = qrRepository.getUserQrById(generatedId!!)
         assertThat(savedQr).isNotNull()
         assertThat(savedQr!!.type).isEqualTo(QrType.EMAIL)
-        assertThat(savedQr.content).isEqualTo("mailto:info@scanflow.io?subject=Feedback&body=Great app!")
+        assertThat(savedQr.content).isEqualTo("mailto:info@scanflow.io?subject=Feedback&body=Great%20app%21")
+    }
+
+    @Test
+    fun `generateAndSaveQr with CALENDAR formats full vEvent`() = runTest(testDispatcher) {
+        var generatedId: Long? = null
+        viewModel.selectType(QrType.CALENDAR)
+        viewModel.updateField {
+            copy(
+                calendarTitle = "Tech Workshop",
+                calendarLocation = "Hall B",
+                calendarDescription = "Hands-on session",
+                calendarDate = "20261015"
+            )
+        }
+
+        viewModel.generateAndSaveQr { id -> generatedId = id }
+        advanceUntilIdle()
+
+        assertThat(generatedId).isNotNull()
+        val savedQr = qrRepository.getUserQrById(generatedId!!)
+        assertThat(savedQr).isNotNull()
+        assertThat(savedQr!!.type).isEqualTo(QrType.CALENDAR)
+        assertThat(savedQr.content).contains("SUMMARY:Tech Workshop")
+        assertThat(savedQr.content).contains("LOCATION:Hall B")
+        assertThat(savedQr.content).contains("DESCRIPTION:Hands-on session")
+        assertThat(savedQr.content).contains("DTSTART:20261015")
+    }
+
+    @Test
+    fun `generateAndSaveQr with PAYMENT UPI formats payee name and amount`() = runTest(testDispatcher) {
+        var generatedId: Long? = null
+        viewModel.selectType(QrType.PAYMENT)
+        viewModel.updateField {
+            copy(
+                paymentType = "UPI",
+                paymentAddress = "merchant@bank",
+                paymentPayeeName = "Shop Store",
+                paymentAmount = "250.00"
+            )
+        }
+
+        viewModel.generateAndSaveQr { id -> generatedId = id }
+        advanceUntilIdle()
+
+        assertThat(generatedId).isNotNull()
+        val savedQr = qrRepository.getUserQrById(generatedId!!)
+        assertThat(savedQr).isNotNull()
+        assertThat(savedQr!!.type).isEqualTo(QrType.PAYMENT)
+        assertThat(savedQr.content).isEqualTo("upi://pay?pa=merchant@bank&pn=Shop%20Store&am=250.00")
+    }
+
+    @Test
+    fun `generateAndSaveQr with SOCIAL strips leading at symbol`() = runTest(testDispatcher) {
+        var generatedId: Long? = null
+        viewModel.selectType(QrType.SOCIAL)
+        viewModel.updateField {
+            copy(
+                socialPlatform = "Instagram",
+                socialUsername = "@scanflow_app"
+            )
+        }
+
+        viewModel.generateAndSaveQr { id -> generatedId = id }
+        advanceUntilIdle()
+
+        assertThat(generatedId).isNotNull()
+        val savedQr = qrRepository.getUserQrById(generatedId!!)
+        assertThat(savedQr).isNotNull()
+        assertThat(savedQr!!.type).isEqualTo(QrType.SOCIAL)
+        assertThat(savedQr.content).isEqualTo("https://instagram.com/scanflow_app")
+        assertThat(savedQr.title).isEqualTo("Instagram: @scanflow_app")
+    }
+
+    @Test
+    fun `generateAndSaveQr with LOCATION rejects invalid latitude`() = runTest(testDispatcher) {
+        var callbackCalled = false
+        viewModel.selectType(QrType.LOCATION)
+        viewModel.updateField {
+            copy(
+                locationLat = "150.0", // Invalid: latitude must be between -90 and 90
+                locationLng = "106.8"
+            )
+        }
+
+        viewModel.generateAndSaveQr { callbackCalled = true }
+        advanceUntilIdle()
+
+        assertThat(callbackCalled).isFalse()
+        assertThat(viewModel.uiState.value.errorMessage).isNotNull()
     }
 }

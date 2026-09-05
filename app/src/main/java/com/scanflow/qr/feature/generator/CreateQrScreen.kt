@@ -31,12 +31,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -198,6 +200,22 @@ fun CreateQrScreen(
                                     )
                                 }
                             }
+                            Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Hidden Network (SSID Tersembunyi)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Switch(
+                                    checked = uiState.wifiHidden,
+                                    onCheckedChange = { viewModel.updateField { copy(wifiHidden = it) } }
+                                )
+                            }
                         }
                         QrType.CONTACT -> {
                             ScanFlowTextField(
@@ -323,10 +341,30 @@ fun CreateQrScreen(
                             )
                             Spacer(modifier = Modifier.height(Dimens.Spacing12))
                             ScanFlowTextField(
+                                value = uiState.calendarDate,
+                                onValueChange = { viewModel.updateField { copy(calendarDate = it) } },
+                                label = "Event Date / Time (Optional)",
+                                placeholder = "2026-10-15 or 20261015T090000",
+                                leadingIcon = Icons.Default.Event,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                            ScanFlowTextField(
                                 value = uiState.calendarLocation,
                                 onValueChange = { viewModel.updateField { copy(calendarLocation = it) } },
                                 label = "Event Location",
                                 placeholder = "Building 4, Room 201",
+                                leadingIcon = Icons.Default.LocationOn,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                            ScanFlowTextField(
+                                value = uiState.calendarDescription,
+                                onValueChange = { viewModel.updateField { copy(calendarDescription = it) } },
+                                label = "Description (Optional)",
+                                placeholder = "Agenda, notes, or details...",
+                                singleLine = false,
+                                maxLines = 3,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -370,6 +408,24 @@ fun CreateQrScreen(
                                 leadingIcon = Icons.Default.Payment,
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            if (uiState.paymentType == "UPI") {
+                                Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                ScanFlowTextField(
+                                    value = uiState.paymentPayeeName,
+                                    onValueChange = { viewModel.updateField { copy(paymentPayeeName = it) } },
+                                    label = "Payee Name (Optional)",
+                                    placeholder = "Merchant or Business Name",
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                ScanFlowTextField(
+                                    value = uiState.paymentAmount,
+                                    onValueChange = { viewModel.updateField { copy(paymentAmount = it) } },
+                                    label = "Amount (Optional)",
+                                    placeholder = "100.00",
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                         QrType.SOCIAL -> {
                             Text(

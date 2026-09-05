@@ -6,6 +6,7 @@ import androidx.camera.core.CameraSelector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
 import com.scanflow.qr.core.utils.SoundHelper
 import com.scanflow.qr.core.utils.VibratorHelper
@@ -217,7 +218,8 @@ class ScannerViewModel @Inject constructor(
                             val barcode = barcodes.first()
                             val raw = barcode.rawValue ?: barcode.displayValue ?: ""
                             if (raw.isNotEmpty()) {
-                                onBarcodeDetected(context, raw, "QR_CODE", onNavigateResult)
+                                val detectedFormat = getBarcodeFormatName(barcode.format)
+                                onBarcodeDetected(context, raw, detectedFormat, onNavigateResult)
                             }
                         } else {
                             _uiState.value = _uiState.value.copy(errorMessage = "No QR or barcode found in image.")
@@ -229,6 +231,24 @@ class ScannerViewModel @Inject constructor(
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(errorMessage = "Error loading image: ${e.localizedMessage}")
             }
+        }
+    }
+
+    private fun getBarcodeFormatName(format: Int): String {
+        return when (format) {
+            Barcode.FORMAT_QR_CODE -> "QR_CODE"
+            Barcode.FORMAT_AZTEC -> "AZTEC"
+            Barcode.FORMAT_DATA_MATRIX -> "DATA_MATRIX"
+            Barcode.FORMAT_PDF417 -> "PDF_417"
+            Barcode.FORMAT_CODE_128 -> "CODE_128"
+            Barcode.FORMAT_CODE_39 -> "CODE_39"
+            Barcode.FORMAT_CODE_93 -> "CODE_93"
+            Barcode.FORMAT_EAN_13 -> "EAN_13"
+            Barcode.FORMAT_EAN_8 -> "EAN_8"
+            Barcode.FORMAT_ITF -> "ITF"
+            Barcode.FORMAT_UPC_A -> "UPC_A"
+            Barcode.FORMAT_UPC_E -> "UPC_E"
+            else -> "QR_CODE"
         }
     }
 

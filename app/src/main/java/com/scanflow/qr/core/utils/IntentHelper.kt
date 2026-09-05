@@ -3,6 +3,7 @@ package com.scanflow.qr.core.utils
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.CalendarContract
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.widget.Toast
@@ -86,6 +87,47 @@ object IntentHelper {
             context.startActivity(intent)
         } catch (e: Exception) {
             Toast.makeText(context, "Cannot insert contact", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun addCalendarEvent(
+        context: Context,
+        title: String,
+        location: String = "",
+        description: String = "",
+        startTime: Long? = null,
+        endTime: Long? = null
+    ) {
+        try {
+            val intent = Intent(Intent.ACTION_INSERT).apply {
+                data = CalendarContract.Events.CONTENT_URI
+                putExtra(CalendarContract.Events.TITLE, title)
+                if (location.isNotEmpty()) putExtra(CalendarContract.Events.EVENT_LOCATION, location)
+                if (description.isNotEmpty()) putExtra(CalendarContract.Events.DESCRIPTION, description)
+                if (startTime != null && startTime > 0) {
+                    putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, startTime)
+                }
+                if (endTime != null && endTime > 0) {
+                    putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime)
+                }
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Cannot add to calendar: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openPayment(context: Context, rawPayload: String) {
+        try {
+            val uri = Uri.parse(rawPayload)
+            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            ShareHelper.copyToClipboard(context, rawPayload)
+            Toast.makeText(context, "Payment app not found. Payload copied to clipboard.", Toast.LENGTH_LONG).show()
         }
     }
 

@@ -109,6 +109,15 @@ class ScanResultViewModel @Inject constructor(
                 val org = parsed.displayDetails["Organization"] ?: ""
                 IntentHelper.saveContact(context, name, phone, email, org)
             }
+            QrType.CALENDAR -> {
+                val title = parsed.displayDetails["Event Title"] ?: parsed.title
+                val location = parsed.displayDetails["Location"] ?: ""
+                val desc = parsed.displayDetails["Description"] ?: ""
+                IntentHelper.addCalendarEvent(context, title, location, desc)
+            }
+            QrType.PAYMENT -> {
+                IntentHelper.openPayment(context, parsed.rawContent)
+            }
             QrType.WIFI -> IntentHelper.openWifiSettings(context)
             else -> ShareHelper.copyToClipboard(context, parsed.rawContent)
         }

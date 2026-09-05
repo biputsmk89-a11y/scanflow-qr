@@ -41,9 +41,13 @@ data class CreateQrUiState(
     // Calendar
     val calendarTitle: String = "",
     val calendarLocation: String = "",
+    val calendarDescription: String = "",
+    val calendarDate: String = "",
     // Payment
     val paymentAddress: String = "",
     val paymentType: String = "UPI",
+    val paymentPayeeName: String = "",
+    val paymentAmount: String = "",
     // Social
     val socialPlatform: String = "Instagram",
     val socialUsername: String = "",
@@ -98,7 +102,7 @@ class CreateQrViewModel @Inject constructor(
                 val url = state.textOrUrl.trim()
                 if (url.isEmpty()) "" to ""
                 else {
-                    val fullUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) "https://$url" else url
+                    val fullUrl = if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) "https://$url" else url
                     fullUrl to fullUrl
                 }
             }
@@ -111,7 +115,9 @@ class CreateQrViewModel @Inject constructor(
                 val ssid = state.wifiSsid.trim()
                 if (ssid.isEmpty()) "" to ""
                 else {
-                    val payload = "WIFI:T:${state.wifiSecurity};S:$ssid;P:${state.wifiPassword};H:${state.wifiHidden};;"
+                    val safeSsid = escapeWifi(ssid)
+                    val safePass = escapeWifi(state.wifiPassword.trim())
+                    val payload = "WIFI:T:${state.wifiSecurity};S:$safeSsid;P:$safePass;H:${state.wifiHidden};;"
                     payload to "Wi-Fi: $ssid"
                 }
             }
@@ -119,15 +125,15 @@ class CreateQrViewModel @Inject constructor(
                 val name = state.contactName.trim()
                 if (name.isEmpty() && state.contactPhone.isEmpty()) "" to ""
                 else {
-                    val vcard = """
-                        BEGIN:VCARD
-                        VERSION:3.0
-                        FN:$name
-                        TEL:${state.contactPhone.trim()}
-                        EMAIL:${state.contactEmail.trim()}
-                        ORG:${state.contactOrg.trim()}
-                        END:VCARD
-                    """.trimIndent()
+                    val vcard = buildString {
+                        appendLine("BEGIN:VCARD")
+                        appendLine("VERSION:3.0")
+                        if (name.isNotEmpty()) appendLine("FN:$name")
+                        if (state.contactPhone.isNotEmpty()) appendLine("TEL:${state.contactPhone.trim()}")
+                        if (state.contactEmail.isNotEmpty()) appendLine("EMAIL:${state.contactEmail.trim()}")
+                        if (state.contactOrg.isNotEmpty()) appendLine("ORG:${state.contactOrg.trim()}")
+                        append("END:VCARD")
+                    }
                     vcard to (name.ifEmpty { "Contact Card" })
                 }
             }
@@ -135,7 +141,13 @@ class CreateQrViewModel @Inject constructor(
                 val email = state.emailTo.trim()
                 if (email.isEmpty()) "" to ""
                 else {
-                    val payload = "mailto:$email?subject=${state.emailSubject}&body=${state.emailBody}"
+                    val encSubject = encodeUriParam(state.emailSubject.trim())
+                    val encBody = encodeUriParam(state.emailBody.trim())
+                    val queryParams = mutableListOf<String>()
+                    if (encSubject.isNotEmpty()) queryParams.add("subject=$encSubject")
+                    if (encBody.isNotEmpty()) queryParams.add("body=$encBody")
+                    val query = if (queryParams.isNotEmpty()) "?" + queryParams.joinToString("&") else ""
+                    val payload = "mailto:$email$query"
                     payload to "Email: $email"
                 }
             }
@@ -147,24 +159,38 @@ class CreateQrViewModel @Inject constructor(
             QrType.SMS -> {
                 val phone = state.smsPhone.trim()
                 if (phone.isEmpty()) "" to ""
-                else "smsto:$phone:${state.smsMessage}" to "SMS to $phone"
+                else "smsto:$phone:${state.smsMessage.trim()}" to "SMS to $phone"
             }
             QrType.LOCATION -> {
                 val lat = state.locationLat.trim()
                 val lng = state.locationLng.trim()
                 if (lat.isEmpty() || lng.isEmpty()) "" to ""
-                else "geo:$lat,$lng" to "Location: $lat, $lng"
+                else {
+                    val latNum = lat.toDoubleOrNull()
+                    val lngNum = lng.toDoubleOrNull()
+                    if (latNum == null || latNum < -90.0 || latNum > 90.0 ||
+                        lngNum == null || lngNum < -180.0 || lngNum > 180.0) {
+                        "" to ""
+                    } else {
+                        "geo:$lat,$lng" to "Location: $lat, $lng"
+                    }
+                }
             }
             QrType.CALENDAR -> {
                 val title = state.calendarTitle.trim()
                 if (title.isEmpty()) "" to ""
                 else {
-                    val vEvent = """
-                        BEGIN:VEVENT
-                        SUMMARY:$title
-                        LOCATION:${state.calendarLocation.trim()}
-                        END:VEVENT
-                    """.trimIndent()
+                    val vEvent = buildString {
+                        appendLine("BEGIN:VEVENT")
+                        appendLine("SUMMARY:$title")
+                        if (state.calendarLocation.isNotEmpty()) appendLine("LOCATION:${state.calendarLocation.trim()}")
+                        if (state.calendarDescription.isNotEmpty()) appendLine("DESCRIPTION:${state.calendarDescription.trim()}")
+                        if (state.calendarDate.isNotEmpty()) {
+                            val cleanDate = state.calendarDate.replace("-", "").replace(":", "").trim()
+                            appendLine("DTSTART:$cleanDate")
+                        }
+                        append("END:VEVENT")
+                    }
                     vEvent to title
                 }
             }
@@ -173,7 +199,11 @@ class CreateQrViewModel @Inject constructor(
                 if (addr.isEmpty()) "" to ""
                 else {
                     val payload = when (state.paymentType) {
-                        "UPI" -> "upi://pay?pa=$addr"
+                        "UPI" -> {
+                            val pn = if (state.paymentPayeeName.isNotEmpty()) "&pn=${encodeUriParam(state.paymentPayeeName.trim())}" else ""
+                            val am = if (state.paymentAmount.isNotEmpty()) "&am=${state.paymentAmount.trim()}" else ""
+                            "upi://pay?pa=$addr$pn$am"
+                        }
                         "Bitcoin" -> "bitcoin:$addr"
                         "Ethereum" -> "ethereum:$addr"
                         else -> "https://paypal.me/$addr"
@@ -182,7 +212,8 @@ class CreateQrViewModel @Inject constructor(
                 }
             }
             QrType.SOCIAL -> {
-                val user = state.socialUsername.trim()
+                val rawUser = state.socialUsername.trim()
+                val user = rawUser.removePrefix("@").trim()
                 if (user.isEmpty()) "" to ""
                 else {
                     val url = when (state.socialPlatform) {
@@ -197,6 +228,21 @@ class CreateQrViewModel @Inject constructor(
                 }
             }
             QrType.BARCODE -> "" to ""
+        }
+    }
+
+    private fun escapeWifi(value: String): String {
+        return value.replace("\\", "\\\\")
+            .replace(";", "\\;")
+            .replace(":", "\\:")
+            .replace(",", "\\,")
+    }
+
+    private fun encodeUriParam(value: String): String {
+        return try {
+            java.net.URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+        } catch (e: Exception) {
+            value
         }
     }
 }
