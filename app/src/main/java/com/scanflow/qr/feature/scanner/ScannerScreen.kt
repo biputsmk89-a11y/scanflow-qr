@@ -1,7 +1,12 @@
 package com.scanflow.qr.feature.scanner
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
@@ -10,7 +15,13 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,25 +30,47 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cameraswitch
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FlashOff
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -52,13 +85,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.scanflow.qr.core.designsystem.Dimens
 import com.scanflow.qr.core.designsystem.EmptyStateView
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.Executors
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScannerScreen(
     viewModel: ScannerViewModel,
@@ -177,7 +215,8 @@ fun ScannerScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = Dimens.Spacing40, start = Dimens.Spacing16, end = Dimens.Spacing16)
+                .statusBarsPadding()
+                .padding(top = Dimens.Spacing16, start = Dimens.Spacing16, end = Dimens.Spacing16)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -192,7 +231,7 @@ fun ScannerScreen(
                         .background(Color.Black.copy(alpha = 0.5f))
                 ) {
                     Icon(
-                        imageVector = Icons.Default.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         tint = Color.White
                     )
@@ -210,7 +249,7 @@ fun ScannerScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (uiState.isBatchMode) "📦 Multi-Scan (Batch)" else "⚡ Single Scan",
+                            text = if (uiState.isBatchMode) "📦 Batch (${uiState.batchCount})" else "⚡ Pindai Tunggal",
                             style = MaterialTheme.typography.labelMedium,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
@@ -254,23 +293,40 @@ fun ScannerScreen(
                 }
             }
 
-            // Batch Mode Counter Pill
-            if (uiState.isBatchMode) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
+            // Live Scan Feedback Banner (Instant Toast / Notification in camera)
+            AnimatedVisibility(
+                visible = uiState.scanBannerMessage != null,
+                enter = slideInVertically() + fadeIn(),
+                exit = slideOutVertically() + fadeOut()
+            ) {
+                Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (uiState.isDuplicateWarning) Color(0xFFE65100).copy(alpha = 0.95f)
+                            else Color(0xFF00C853).copy(alpha = 0.95f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.dismissBanner() }
                 ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFF00C853).copy(alpha = 0.9f)
+                    Row(
+                        modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Icon(
+                            imageVector = if (uiState.isDuplicateWarning) Icons.Default.Warning else Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(Dimens.Spacing12))
                         Text(
-                            text = "✨ ${uiState.batchCount} Barcodes Scanned in Session",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = uiState.scanBannerMessage.orEmpty(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -282,17 +338,16 @@ fun ScannerScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(bottom = Dimens.Spacing32, start = Dimens.Spacing20, end = Dimens.Spacing20),
+                .navigationBarsPadding()
+                .padding(bottom = Dimens.Spacing24, start = Dimens.Spacing16, end = Dimens.Spacing16),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (uiState.isBatchMode && uiState.batchCount > 0) {
-                // Batch Summary Tray
+            if (uiState.isBatchMode) {
+                // Batch Mode Control Deck
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
+                    shape = RoundedCornerShape(20.dp),
                     color = Color(0xFF131B2E).copy(alpha = 0.95f),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = Dimens.Spacing16)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(Dimens.Spacing16)) {
                         Row(
@@ -302,32 +357,71 @@ fun ScannerScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Last Scanned: ${uiState.lastBatchItem?.title ?: "Item"}",
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    text = "Mode Beruntun (Massal)",
+                                    style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                    maxLines = 1
+                                    color = Color.White
                                 )
                                 Text(
-                                    text = "Total ${uiState.batchCount} items in this batch",
+                                    text = "${uiState.batchCount} barcode tersimpan dalam sesi ini",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Color(0xFF00E5FF)
                                 )
                             }
+
+                            // Duplicate Prevention Filter Chip
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                onClick = {
-                                    uiState.lastScannedId?.let { onNavigateResult(it) }
-                                }
+                                color = if (!uiState.allowDuplicates) Color(0xFF2E7D32) else Color.DarkGray,
+                                onClick = { viewModel.toggleAllowDuplicates() }
                             ) {
                                 Text(
-                                    text = "Review Batch",
-                                    style = MaterialTheme.typography.labelMedium,
+                                    text = if (!uiState.allowDuplicates) "🚫 Tolak Duplikat" else "🔁 Izinkan Duplikat",
+                                    style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                 )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12)
+                        ) {
+                            // Review Batch Button
+                            FilledTonalButton(
+                                onClick = { viewModel.setBatchSheetVisible(true) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(
+                                    text = "Daftar Hasil (${uiState.batchCount})",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            // Clear Batch
+                            if (uiState.batchCount > 0) {
+                                OutlinedButton(
+                                    onClick = { viewModel.clearBatch() },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = Color(0xFFFF8A80)
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.DeleteSweep,
+                                        contentDescription = "Clear Session",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -339,39 +433,317 @@ fun ScannerScreen(
                     modifier = Modifier.padding(bottom = Dimens.Spacing16)
                 ) {
                     Text(
-                        text = if (uiState.isBatchMode) "Point camera at barcodes continuously (Cashier/Inventory Mode)"
-                               else "Align QR code or barcode inside the frame to scan",
+                        text = "Arahkan kamera ke kode QR atau Barcode",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 }
-            }
 
-            // Gallery Button
-            Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = Color.Black.copy(alpha = 0.6f),
-                onClick = { galleryLauncher.launch("image/*") }
+                // Gallery Button
+                Surface(
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.Black.copy(alpha = 0.6f),
+                    onClick = { galleryLauncher.launch("image/*") }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Dimens.Spacing20, vertical = Dimens.Spacing12),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(Dimens.Spacing8))
+                        Text(
+                            text = "Pindai dari Galeri",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Modal Bottom Sheet: Review Batch Scans & Export
+    if (uiState.isBatchSheetVisible) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.setBatchSheetVisible(false) },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.Spacing20)
+                    .padding(bottom = Dimens.Spacing32)
             ) {
+                // Header
                 Row(
-                    modifier = Modifier.padding(horizontal = Dimens.Spacing20, vertical = Dimens.Spacing12),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Image,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(Dimens.Spacing8))
-                    Text(
-                        text = "Scan from Gallery",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "📦 Hasil Pindai Batch",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Text(
+                                text = "${uiState.batchCount} item",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(onClick = { viewModel.setBatchSheetVisible(false) }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                // Duplicate Toggle Option
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Dimens.Spacing16, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Tolak Duplikasi Kode",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Abaikan pemindaian ganda (cocok untuk tiket/absensi)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = !uiState.allowDuplicates,
+                            onCheckedChange = { viewModel.toggleAllowDuplicates() },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                // Action Export Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8)
+                ) {
+                    // Copy CSV Button
+                    FilledTonalButton(
+                        onClick = {
+                            if (uiState.batchItems.isNotEmpty()) {
+                                val csv = viewModel.getBatchCsvExportText()
+                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                val clip = ClipData.newPlainText("ScanFlow Batch CSV", csv)
+                                clipboard.setPrimaryClip(clip)
+                                Toast.makeText(context, "✅ CSV berhasil disalin ke papan klip!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Belum ada item untuk disalin", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Salin CSV", style = MaterialTheme.typography.labelMedium)
+                    }
+
+                    // Share Button
+                    FilledTonalButton(
+                        onClick = {
+                            if (uiState.batchItems.isNotEmpty()) {
+                                val summary = viewModel.getBatchPlainTextSummary()
+                                val sendIntent = Intent().apply {
+                                    action = Intent.ACTION_SEND
+                                    putExtra(Intent.EXTRA_TEXT, summary)
+                                    type = "text/plain"
+                                }
+                                val shareIntent = Intent.createChooser(sendIntent, "Bagikan Laporan Batch")
+                                context.startActivity(shareIntent)
+                            } else {
+                                Toast.makeText(context, "Belum ada item untuk dibagikan", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Bagikan", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Dimens.Spacing16))
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                // Scanned Items List
+                if (uiState.batchItems.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = Dimens.Spacing32),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.QrCode,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Belum ada kode yang dipindai",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "Arahkan kamera ke barcode untuk memindai massal.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                } else {
+                    val timeFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(340.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        itemsIndexed(
+                            items = uiState.batchItems,
+                            key = { _, item -> item.scanId }
+                        ) { index, item ->
+                            Card(
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.setBatchSheetVisible(false)
+                                        onNavigateResult(item.scanId)
+                                    }
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Text(
+                                                text = "${uiState.batchItems.size - index}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = MaterialTheme.colorScheme.secondaryContainer
+                                            ) {
+                                                Text(
+                                                    text = item.data.type.name,
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = timeFormat.format(Date(item.scannedAt)),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Text(
+                                            text = item.data.title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = item.data.rawContent,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    // Delete from batch
+                                    IconButton(
+                                        onClick = { viewModel.removeItemFromBatch(item.scanId) },
+                                        modifier = Modifier.size(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Hapus",
+                                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -36,7 +36,8 @@ object AppViewModelProvider {
             ScannerViewModel(
                 parseQrCodeUseCase = container.parseQrCodeUseCase,
                 saveScanResultUseCase = container.saveScanResultUseCase,
-                getSettingsUseCase = container.getSettingsUseCase
+                getSettingsUseCase = container.getSettingsUseCase,
+                deleteHistoryUseCase = container.deleteHistoryUseCase
             )
         }
         initializer {
