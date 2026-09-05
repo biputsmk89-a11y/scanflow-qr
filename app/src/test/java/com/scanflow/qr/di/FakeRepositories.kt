@@ -89,7 +89,7 @@ class FakeQrGeneratorRepository : QrGeneratorRepository {
     override fun generateQrBitmap(content: String, config: QrStyleConfig): Bitmap? = null
 
     override suspend fun saveUserQr(userQrCode: UserQrCode): Long {
-        val newId = (_createdQrs.value.size + 1).toLong()
+        val newId = if (userQrCode.id > 0) userQrCode.id else (_createdQrs.value.size + 1).toLong()
         _createdQrs.value = _createdQrs.value + userQrCode.copy(id = newId)
         return newId
     }
@@ -124,3 +124,69 @@ class FakeQrGeneratorRepository : QrGeneratorRepository {
     override suspend fun exportQrPdf(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri? = null
     override suspend fun cacheQrPdfForSharing(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri? = null
 }
+
+class FakeFavoriteRepository(
+    private val historyRepo: FakeHistoryRepository? = null,
+    private val qrRepo: FakeQrGeneratorRepository? = null
+) : com.scanflow.qr.domain.repository.FavoriteRepository {
+    private val _favScans = MutableStateFlow<List<ScanHistoryItem>>(emptyList())
+    private val _favQrs = MutableStateFlow<List<UserQrCode>>(emptyList())
+
+    fun emitScans(scans: List<ScanHistoryItem>) {
+        _favScans.value = scans
+    }
+
+    fun emitQrs(qrs: List<UserQrCode>) {
+        _favQrs.value = qrs
+    }
+
+    override fun getAllFavoriteScans(): Flow<List<ScanHistoryItem>> =
+        historyRepo?.getFavoriteHistory() ?: _favScans
+
+    override fun getAllFavoriteCreatedQrs(): Flow<List<UserQrCode>> =
+        qrRepo?.getFavoriteUserQrs() ?: _favQrs
+}
+
+class FakeSettingsRepository(
+    initialSettings: com.scanflow.qr.domain.model.AppSettings = com.scanflow.qr.domain.model.AppSettings()
+) : com.scanflow.qr.domain.repository.SettingsRepository {
+    private val _settings = MutableStateFlow(initialSettings)
+    override val settingsFlow: Flow<com.scanflow.qr.domain.model.AppSettings> = _settings.asStateFlow()
+
+    override suspend fun updateThemeMode(themeMode: com.scanflow.qr.domain.model.AppThemeMode) {
+        _settings.value = _settings.value.copy(themeMode = themeMode)
+    }
+
+    override suspend fun updateVibrate(enabled: Boolean) {
+        _settings.value = _settings.value.copy(vibrateOnScan = enabled)
+    }
+
+    override suspend fun updateBeep(enabled: Boolean) {
+        _settings.value = _settings.value.copy(beepOnScan = enabled)
+    }
+
+    override suspend fun updateAutoOpen(enabled: Boolean) {
+        _settings.value = _settings.value.copy(autoOpenUrl = enabled)
+    }
+
+    override suspend fun updateAutoCopy(enabled: Boolean) {
+        _settings.value = _settings.value.copy(autoCopyToClipboard = enabled)
+    }
+
+    override suspend fun updateAppLock(enabled: Boolean) {
+        _settings.value = _settings.value.copy(isAppLockEnabled = enabled)
+    }
+
+    override suspend fun updateBiometric(enabled: Boolean) {
+        _settings.value = _settings.value.copy(isBiometricEnabled = enabled)
+    }
+
+    override suspend fun updatePinCode(pin: String?) {
+        _settings.value = _settings.value.copy(pinCode = pin)
+    }
+
+    override suspend fun setOnboardingCompleted(completed: Boolean) {
+        _settings.value = _settings.value.copy(isOnboardingCompleted = completed)
+    }
+}
+
