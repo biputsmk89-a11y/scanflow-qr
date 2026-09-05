@@ -27,6 +27,10 @@ object BiometricAuthManager {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
+        if (activity.isFinishing || activity.isDestroyed) {
+            onError("Activity is not in an active state")
+            return
+        }
         try {
             val executor = ContextCompat.getMainExecutor(activity)
             val promptInfo = BiometricPrompt.PromptInfo.Builder()

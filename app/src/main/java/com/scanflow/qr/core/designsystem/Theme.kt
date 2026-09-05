@@ -55,6 +55,15 @@ private val LightColorScheme = lightColorScheme(
     onError = LightSurface
 )
 
+private fun android.content.Context.findActivity(): Activity? {
+    var current: android.content.Context? = this
+    while (current is android.content.ContextWrapper) {
+        if (current is Activity) return current
+        current = current.baseContext
+    }
+    return null
+}
+
 @Composable
 fun ScanFlowQRTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -64,17 +73,19 @@ fun ScanFlowQRTheme(
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
-            val window = (view.context as? Activity)?.window
-            if (window != null) {
-                window.statusBarColor = colorScheme.background.toArgb()
-                window.navigationBarColor = colorScheme.background.toArgb()
-                try {
+            try {
+                val activity = view.context.findActivity()
+                val window = activity?.window
+                if (window != null && !activity.isFinishing && !activity.isDestroyed) {
+                    window.statusBarColor = colorScheme.background.toArgb()
+                    window.navigationBarColor = colorScheme.background.toArgb()
                     val insetsController = WindowCompat.getInsetsController(window, view)
                     insetsController.isAppearanceLightStatusBars = !darkTheme
                     insetsController.isAppearanceLightNavigationBars = !darkTheme
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+            } catch (t: Throwable) {
+                // Safeguard against any internal NullPointerException on custom ROMs (MIUI / HyperOS)
+                t.printStackTrace()
             }
         }
     }

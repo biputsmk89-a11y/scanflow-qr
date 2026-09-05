@@ -52,7 +52,8 @@ fun ProfileScreen(
     onNavigateToFavorites: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToSecurity: () -> Unit,
-    onNavigateToAbout: () -> Unit
+    onNavigateToAbout: () -> Unit,
+    onNavigateToAuth: () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -106,7 +107,23 @@ fun ProfileScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(Dimens.Spacing28))
+        Spacer(modifier = Modifier.height(Dimens.Spacing24))
+
+        // Account & Login Section
+        SectionHeader(title = "Akun & Autentikasi")
+        Spacer(modifier = Modifier.height(Dimens.Spacing8))
+        ScanFlowCard(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(horizontal = Dimens.Spacing16, vertical = Dimens.Spacing8)) {
+                SettingNavRow(
+                    title = "Menu Login & Akun",
+                    subtitle = "Masuk atau ganti profil pengguna ScanFlow",
+                    icon = Icons.Default.Person,
+                    onClick = onNavigateToAuth
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.Spacing24))
 
         // Navigation Sections
         SectionHeader(title = "My Content")
@@ -119,7 +136,7 @@ fun ProfileScreen(
                     icon = Icons.Default.QrCode,
                     onClick = onNavigateToMyQr
                 )
-                Divider(color = MaterialTheme.colorScheme.outline)
+                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 SettingNavRow(
                     title = "Favorite Records",
                     subtitle = "Pinned scans and custom codes",
@@ -141,14 +158,14 @@ fun ProfileScreen(
                     icon = Icons.Default.Security,
                     onClick = onNavigateToSecurity
                 )
-                Divider(color = MaterialTheme.colorScheme.outline)
+                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 SettingNavRow(
                     title = "App Preferences",
                     subtitle = "Theme, Haptics, and Sound settings",
                     icon = Icons.Default.Settings,
                     onClick = onNavigateToSettings
                 )
-                Divider(color = MaterialTheme.colorScheme.outline)
+                androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                 SettingNavRow(
                     title = "Cloud & Local Backup Sync",
                     subtitle = "Google Drive & JSON Export/Restore",

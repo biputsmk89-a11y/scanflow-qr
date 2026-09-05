@@ -54,7 +54,8 @@ fun MainScreen(
     onNavigateToPreview: (Long) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToSecurity: () -> Unit,
-    onNavigateToAbout: () -> Unit
+    onNavigateToAbout: () -> Unit,
+    onNavigateToAuth: () -> Unit = {}
 ) {
     var currentTab by rememberSaveable { mutableStateOf(BottomNavItem.Home.route) }
 
@@ -155,7 +156,8 @@ fun MainScreen(
                         onNavigateToFavorites = onNavigateToFavorites,
                         onNavigateToSettings = onNavigateToSettings,
                         onNavigateToSecurity = onNavigateToSecurity,
-                        onNavigateToAbout = onNavigateToAbout
+                        onNavigateToAbout = onNavigateToAbout,
+                        onNavigateToAuth = onNavigateToAuth
                     )
                 }
             }

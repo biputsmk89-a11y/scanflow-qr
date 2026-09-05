@@ -74,7 +74,7 @@ fun ScanFlowNavGraph(
             OnboardingScreen(
                 onFinish = {
                     onCompleteOnboarding()
-                    navController.navigate(Screen.Main.route) {
+                    navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Onboarding.route) { inclusive = true }
                     }
                 }
@@ -88,8 +88,22 @@ fun ScanFlowNavGraph(
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
                 },
+                onLoginSuccess = {
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Auth.route) { inclusive = true }
+                    }
+                },
                 onLearnPrivacy = {
                     navController.navigate(Screen.About.route)
+                },
+                onNavigateBack = {
+                    if (navController.previousBackStackEntry != null) {
+                        navController.popBackStack()
+                    } else {
+                        navController.navigate(Screen.Main.route) {
+                            popUpTo(Screen.Auth.route) { inclusive = true }
+                        }
+                    }
                 }
             )
         }
@@ -108,7 +122,8 @@ fun ScanFlowNavGraph(
                 onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToSecurity = { navController.navigate(Screen.Security.route) },
-                onNavigateToAbout = { navController.navigate(Screen.About.route) }
+                onNavigateToAbout = { navController.navigate(Screen.About.route) },
+                onNavigateToAuth = { navController.navigate(Screen.Auth.route) }
             )
         }
 
