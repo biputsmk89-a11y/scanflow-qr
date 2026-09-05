@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'Release Version Name (e.g. 1.0.0)'
+        description: 'Release Version Name (e.g. 1.1.1)'
         required: true
-        default: '1.0.0'
+        default: '1.1.1'
 
 permissions:
   contents: write
@@ -161,22 +161,6 @@ jobs:
               gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
             fi
           done
-
-      - name: Upload Release APK Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ScanFlow-QR-APK
-          path: ${{ steps.artifacts_step.outputs.apk_path }}
-          retention-days: 1
-
-      - name: Upload Release AAB Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ScanFlow-QR-AAB
-          path: ${{ steps.artifacts_step.outputs.aab_path }}
-          retention-days: 1
 
       - name: Cleanup Keystore
         if: always()

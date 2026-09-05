@@ -43,11 +43,3 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ScanFlow-QR-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 1
-
