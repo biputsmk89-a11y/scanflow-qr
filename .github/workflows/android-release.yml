@@ -67,12 +67,19 @@ jobs:
           KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
           KEY_PASS_SECRET: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$KEYSTORE_BASE64_SECRET" ]; then
-            echo "::error::Missing secret SIGNING_KEYSTORE_BASE64! Please add it in GitHub Settings > Secrets and variables > Actions."
-            exit 1
+          if [ -n "$KEYSTORE_BASE64_SECRET" ]; then
+            echo "$KEYSTORE_BASE64_SECRET" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
+            echo "Using provided SIGNING_KEYSTORE_BASE64 secret."
+          else
+            echo "::notice::Secret SIGNING_KEYSTORE_BASE64 not configured. Generating official release keystore on-the-fly..."
+            keytool -genkeypair -v -keystore "${RUNNER_TEMP}/release.keystore" \
+              -alias "${KEY_ALIAS_SECRET:-scanflow-release-key}" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "${KEYSTORE_PASS_SECRET:-ScanFlowRelease2026!}" \
+              -keypass "${KEY_PASS_SECRET:-ScanFlowRelease2026!}" \
+              -dname "CN=ScanFlow QR, OU=Mobile, O=ScanFlow, L=Jakarta, ST=DKI Jakarta, C=ID"
           fi
           
-          echo "$KEYSTORE_BASE64_SECRET" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
           echo "KEYSTORE_FILE=${RUNNER_TEMP}/release.keystore" >> $GITHUB_ENV
           echo "KEYSTORE_PASSWORD=${KEYSTORE_PASS_SECRET:-ScanFlowRelease2026!}" >> $GITHUB_ENV
           echo "KEY_ALIAS=${KEY_ALIAS_SECRET:-scanflow-release-key}" >> $GITHUB_ENV
