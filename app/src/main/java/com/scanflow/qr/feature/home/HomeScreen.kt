@@ -1,6 +1,7 @@
 package com.scanflow.qr.feature.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,43 +20,56 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.AddBox
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ViewWeek
+import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.scanflow.qr.core.common.toFormattedDateString
 import com.scanflow.qr.core.designsystem.CyanAccent
 import com.scanflow.qr.core.designsystem.Dimens
 import com.scanflow.qr.core.designsystem.ElectricBlue
 import com.scanflow.qr.core.designsystem.EmptyStateView
 import com.scanflow.qr.core.designsystem.ErrorRed
-import com.scanflow.qr.core.designsystem.ScanFlowCard
-import com.scanflow.qr.core.designsystem.ScanFlowPrimaryButton
-import com.scanflow.qr.core.designsystem.SectionHeader
-import com.scanflow.qr.core.designsystem.SuccessGreen
+import com.scanflow.qr.domain.model.QrType
 import com.scanflow.qr.domain.model.ScanHistoryItem
+import java.util.Calendar
 
 @Composable
 fun HomeScreen(
@@ -68,15 +82,35 @@ fun HomeScreen(
     onNavigateToResult: (Long) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+
+    val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
+    val greetingText = when (currentHour) {
+        in 5..11 -> "Good Morning ☀️"
+        in 12..16 -> "Good Afternoon 🌤️"
+        else -> "Good Evening 👋"
+    }
+
+    val filteredScans = remember(searchQuery, uiState.recentScans) {
+        if (searchQuery.isBlank()) {
+            uiState.recentScans
+        } else {
+            uiState.recentScans.filter {
+                it.title.contains(searchQuery, ignoreCase = true) ||
+                        it.content.contains(searchQuery, ignoreCase = true) ||
+                        it.type.displayName.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = Dimens.Spacing20),
-        contentPadding = PaddingValues(top = Dimens.Spacing24, bottom = Dimens.Spacing32)
+        contentPadding = PaddingValues(top = Dimens.Spacing20, bottom = 100.dp)
     ) {
-        // App Header
+        // 1. Google Stitch Header (Greeting + User Profile)
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -85,97 +119,249 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "ScanFlow QR",
-                        style = MaterialTheme.typography.headlineLarge,
+                        text = greetingText,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Scan. Create. Connect.",
+                        text = "Ready to scan?",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = CyanAccent
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.padding(4.dp)
+                // Avatar Icon with Stitch glow border
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(ElectricBlue.copy(alpha = 0.2f), CyanAccent.copy(alpha = 0.2f))
+                            )
+                        )
+                        .border(
+                            2.dp,
+                            Brush.linearGradient(listOf(ElectricBlue, CyanAccent)),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = ElectricBlue,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(Dimens.Spacing16))
+        }
+
+        // 2. Google Stitch Search Bar
+        item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp)),
+                placeholder = {
+                    Text(
+                        text = "Search QR Codes, History...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = MaterialTheme.colorScheme.outline
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Clear",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                shape = RoundedCornerShape(20.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = ElectricBlue,
+                    unfocusedBorderColor = Color.Transparent
+                ),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(Dimens.Spacing20))
+        }
+
+        // 3. Google Stitch Hero Card ("Scan QR Instantly")
+        item {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.linearGradient(
+                                colors = listOf(
+                                    Color(0xFF0040DF),
+                                    Color(0xFF2D5BFF),
+                                    Color(0xFF0052FF)
+                                )
+                            )
+                        )
+                        .padding(24.dp)
+                ) {
+                    // Decorative Background Glow & QR Watermark (Stitch Style)
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .align(Alignment.CenterEnd)
+                            .background(Color(0xFF00E3FD).copy(alpha = 0.15f), CircleShape)
+                    )
+                    Icon(
+                        imageVector = Icons.Default.QrCode,
+                        contentDescription = null,
+                        tint = Color(0xFF00E3FD).copy(alpha = 0.35f),
+                        modifier = Modifier
+                            .size(110.dp)
+                            .align(Alignment.CenterEnd)
+                    )
+
+                    // Hero Content
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth(0.68f)
+                            .align(Alignment.CenterStart)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Shield,
-                            contentDescription = null,
-                            tint = SuccessGreen,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Protected",
-                            style = MaterialTheme.typography.labelSmall,
+                            text = "Scan QR Instantly",
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = SuccessGreen
+                            color = Color.White
                         )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Fast, secure, and reliable scanning for all formats.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.85f),
+                            lineHeight = 18.sp
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        // Pill Scan Button
+                        Button(
+                            onClick = onNavigateToScan,
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                contentColor = Color(0xFF0040DF)
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = Color(0xFF0040DF)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Scan Now",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
                 }
             }
             Spacer(modifier = Modifier.height(Dimens.Spacing24))
         }
 
-        // Hero Scan Button
+        // 4. Google Stitch Quick Actions Grid (3x2)
         item {
-            ScanFlowPrimaryButton(
-                text = "Open Camera Scanner",
-                icon = Icons.Default.QrCodeScanner,
-                onClick = onNavigateToScan,
-                modifier = Modifier.fillMaxWidth(),
-                gradient = true
+            Text(
+                text = "Quick Actions",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
-            Spacer(modifier = Modifier.height(Dimens.Spacing20))
-        }
+            Spacer(modifier = Modifier.height(Dimens.Spacing12))
 
-        // Quick Actions Grid
-        item {
-            SectionHeader(title = "Quick Actions")
-            Spacer(modifier = Modifier.height(Dimens.Spacing8))
+            // Row 1
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                QuickActionCard(
+                StitchActionCard(
+                    title = "Scan QR",
+                    icon = Icons.Default.QrCodeScanner,
+                    iconTint = ElectricBlue,
+                    containerColor = ElectricBlue.copy(alpha = 0.12f),
+                    onClick = onNavigateToScan,
+                    modifier = Modifier.weight(1f)
+                )
+                StitchActionCard(
                     title = "Create QR",
-                    icon = Icons.Default.AddCircleOutline,
-                    accentColor = ElectricBlue,
+                    icon = Icons.Default.AddBox,
+                    iconTint = Color(0xFF0097A7),
+                    containerColor = Color(0xFF00E3FD).copy(alpha = 0.15f),
                     onClick = onNavigateToCreate,
                     modifier = Modifier.weight(1f)
                 )
-                QuickActionCard(
-                    title = "My QR Studio",
-                    icon = Icons.Default.QrCode,
-                    accentColor = CyanAccent,
-                    onClick = onNavigateToMyQr,
+                StitchActionCard(
+                    title = "Barcode",
+                    icon = Icons.Default.ViewWeek,
+                    iconTint = Color(0xFFE65100),
+                    containerColor = Color(0xFFFF9800).copy(alpha = 0.15f),
+                    onClick = onNavigateToScan,
                     modifier = Modifier.weight(1f)
                 )
             }
-            Spacer(modifier = Modifier.height(Dimens.Spacing12))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Row 2
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                QuickActionCard(
-                    title = "Full History",
+                StitchActionCard(
+                    title = "My QR",
+                    icon = Icons.Default.QrCode2,
+                    iconTint = ElectricBlue,
+                    containerColor = ElectricBlue.copy(alpha = 0.12f),
+                    onClick = onNavigateToMyQr,
+                    modifier = Modifier.weight(1f)
+                )
+                StitchActionCard(
+                    title = "History",
                     icon = Icons.Default.History,
-                    accentColor = Color(0xFFA855F7),
+                    iconTint = Color(0xFF5C6BC0),
+                    containerColor = Color(0xFF5C6BC0).copy(alpha = 0.15f),
                     onClick = onNavigateToHistory,
                     modifier = Modifier.weight(1f)
                 )
-                QuickActionCard(
+                StitchActionCard(
                     title = "Favorites",
                     icon = Icons.Default.Favorite,
-                    accentColor = ErrorRed,
+                    iconTint = ErrorRed,
+                    containerColor = ErrorRed.copy(alpha = 0.15f),
                     onClick = onNavigateToFavorites,
                     modifier = Modifier.weight(1f)
                 )
@@ -183,213 +369,210 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(Dimens.Spacing24))
         }
 
-        // Live Statistics Card
+        // 5. Google Stitch Recent Activity Header
         item {
-            SectionHeader(title = "Overview & Statistics")
-            Spacer(modifier = Modifier.height(Dimens.Spacing8))
-            ScanFlowCard(
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                backgroundColor = MaterialTheme.colorScheme.surfaceVariant
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(Dimens.Spacing16),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    StatItem(
-                        label = "Scans Today",
-                        value = "${uiState.analytics.scansToday}",
+                Text(
+                    text = if (searchQuery.isNotBlank()) "Search Results (${filteredScans.size})" else "Recent Activity",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                TextButton(onClick = onNavigateToHistory) {
+                    Text(
+                        text = "View All",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
                         color = ElectricBlue
-                    )
-                    StatItem(
-                        label = "Total Scans",
-                        value = "${uiState.analytics.totalScans}",
-                        color = CyanAccent
-                    )
-                    StatItem(
-                        label = "QRs Created",
-                        value = "${uiState.analytics.totalCreated}",
-                        color = SuccessGreen
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(Dimens.Spacing24))
-        }
-
-        // Recent Scans Section
-        item {
-            SectionHeader(
-                title = "Recent Scans",
-                actionText = if (uiState.recentScans.isNotEmpty()) "See All" else null,
-                onActionClick = onNavigateToHistory
-            )
             Spacer(modifier = Modifier.height(Dimens.Spacing8))
         }
 
-        if (uiState.recentScans.isEmpty()) {
+        // 6. Recent Activity List Items (with Stitch Accent Borders)
+        if (filteredScans.isEmpty()) {
             item {
                 EmptyStateView(
-                    title = "No Scans Yet",
-                    description = "Point your camera at any QR code or barcode to scan and view details.",
+                    title = if (searchQuery.isBlank()) "No Recent Activity" else "No matching scans found",
+                    description = if (searchQuery.isBlank()) "Scan your first QR code or barcode to see it here." else "Try searching for a different keyword or URL.",
                     icon = Icons.Default.QrCodeScanner,
-                    actionText = "Scan First Code",
+                    actionText = "Scan Now",
                     onActionClick = onNavigateToScan
                 )
             }
         } else {
-            items(uiState.recentScans, key = { it.id }) { scan ->
-                RecentScanCard(
+            items(filteredScans, key = { it.id }) { scan ->
+                StitchRecentActivityCard(
                     scan = scan,
                     onClick = { onNavigateToResult(scan.id) },
                     onToggleFavorite = { viewModel.toggleFavorite(scan.id, scan.isFavorite) }
                 )
-                Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                Spacer(modifier = Modifier.height(10.dp))
             }
         }
     }
 }
 
+/**
+ * Stitch Quick Action Card with rounded corners and circular tinted icon
+ */
 @Composable
-fun QuickActionCard(
+private fun StitchActionCard(
     title: String,
     icon: ImageVector,
-    accentColor: Color,
+    iconTint: Color,
+    containerColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ScanFlowCard(
-        modifier = modifier,
-        onClick = onClick,
-        backgroundColor = MaterialTheme.colorScheme.surface
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick)
     ) {
         Column(
-            modifier = Modifier.padding(Dimens.Spacing16),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 14.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(accentColor.copy(alpha = 0.15f)),
+                    .size(46.dp)
+                    .clip(CircleShape)
+                    .background(containerColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
-                    tint = accentColor,
+                    contentDescription = title,
+                    tint = iconTint,
                     modifier = Modifier.size(24.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(Dimens.Spacing12))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
             )
         }
     }
 }
 
+/**
+ * Stitch Recent Activity Card with colorful left border accent
+ */
 @Composable
-fun StatItem(
-    label: String,
-    value: String,
-    color: Color
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = color
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
-fun RecentScanCard(
+private fun StitchRecentActivityCard(
     scan: ScanHistoryItem,
     onClick: () -> Unit,
-    onToggleFavorite: () -> Unit,
-    modifier: Modifier = Modifier
+    onToggleFavorite: () -> Unit
 ) {
-    ScanFlowCard(
-        modifier = modifier.fillMaxWidth(),
-        onClick = onClick,
-        backgroundColor = MaterialTheme.colorScheme.surface
+    val accentColor = when (scan.type) {
+        QrType.WEBSITE -> Color(0xFF10B981) // Emerald Green for Links
+        QrType.WIFI -> CyanAccent
+        QrType.CONTACT -> ElectricBlue
+        QrType.PAYMENT -> Color(0xFFFF9800)
+        QrType.EMAIL -> Color(0xFF2979FF)
+        QrType.PHONE, QrType.SMS -> Color(0xFF00BCD4)
+        else -> Color(0xFF8B5CF6) // Violet for generic text
+    }
+
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimens.Spacing16),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(vertical = 12.dp, horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+            // Left Accent Bar (Stitch Design)
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(38.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(accentColor)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Category Icon in Rounded Container
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(accentColor.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(ElectricBlue.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.QrCode,
-                        contentDescription = null,
-                        tint = ElectricBlue,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(Dimens.Spacing12))
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.padding(end = Dimens.Spacing8)
-                        ) {
-                            Text(
-                                text = scan.type.name,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Text(
-                            text = scan.createdAt.toFormattedDateString(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(Dimens.Spacing4))
-                    Text(
-                        text = scan.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                Icon(
+                    imageVector = when (scan.type) {
+                        QrType.WEBSITE -> Icons.Default.Language
+                        QrType.WIFI -> Icons.Default.Wifi
+                        QrType.CONTACT -> Icons.Default.Person
+                        else -> Icons.Default.QrCode
+                    },
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(22.dp)
+                )
             }
 
-            IconButton(onClick = onToggleFavorite) {
+            Spacer(modifier = Modifier.width(14.dp))
+
+            // Text Content
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = scan.title.ifBlank { scan.content },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${scan.type.displayName} • ${scan.createdAt.toFormattedDateString()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Favorite Button
+            IconButton(
+                onClick = onToggleFavorite,
+                modifier = Modifier.size(36.dp)
+            ) {
                 Icon(
                     imageVector = if (scan.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "Favorite",
-                    tint = if (scan.isFavorite) ErrorRed else MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = if (scan.isFavorite) ErrorRed else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

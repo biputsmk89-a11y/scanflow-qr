@@ -90,6 +90,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.scanflow.qr.core.designsystem.Dimens
+import com.scanflow.qr.core.designsystem.ElectricBlue
 import com.scanflow.qr.core.designsystem.EmptyStateView
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -427,43 +428,106 @@ fun ScannerScreen(
                     }
                 }
             } else {
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = Color.Black.copy(alpha = 0.65f),
-                    modifier = Modifier.padding(bottom = Dimens.Spacing16)
-                ) {
-                    Text(
-                        text = "Arahkan kamera ke kode QR atau Barcode",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                }
+                // Stitch Instruction Text
+                Text(
+                    text = "Place the QR Code inside the frame",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
 
-                // Gallery Button
+                // Stitch Glassmorphic Quick Controls Pill
                 Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = Color.Black.copy(alpha = 0.6f),
-                    onClick = { galleryLauncher.launch("image/*") }
+                    shape = RoundedCornerShape(50),
+                    color = Color.Black.copy(alpha = 0.55f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                    modifier = Modifier.padding(bottom = 16.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = Dimens.Spacing20, vertical = Dimens.Spacing12),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Image,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(Dimens.Spacing8))
-                        Text(
-                            text = "Pindai dari Galeri",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        // Torch
+                        IconButton(
+                            onClick = { viewModel.toggleTorch() },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.isTorchEnabled) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                                contentDescription = "Torch",
+                                tint = if (uiState.isTorchEnabled) Color(0xFF00E3FD) else Color.White
+                            )
+                        }
+
+                        // Divider
+                        Box(modifier = Modifier.width(1.dp).height(20.dp).background(Color.White.copy(alpha = 0.25f)))
+
+                        // Gallery
+                        IconButton(
+                            onClick = { galleryLauncher.launch("image/*") },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Image,
+                                contentDescription = "Gallery",
+                                tint = Color.White
+                            )
+                        }
+
+                        // Divider
+                        Box(modifier = Modifier.width(1.dp).height(20.dp).background(Color.White.copy(alpha = 0.25f)))
+
+                        // Camera Switch
+                        IconButton(
+                            onClick = { viewModel.switchCamera() },
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Cameraswitch,
+                                contentDescription = "Switch Camera",
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+
+                // Mode Selector Pill (Stitch Design)
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = Color.Black.copy(alpha = 0.5f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+                ) {
+                    Row(modifier = Modifier.padding(4.dp)) {
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = if (!uiState.isBatchMode) ElectricBlue else Color.Transparent,
+                            onClick = { if (uiState.isBatchMode) viewModel.toggleBatchMode() }
+                        ) {
+                            Text(
+                                text = "QR Code",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(50),
+                            color = if (uiState.isBatchMode) ElectricBlue else Color.Transparent,
+                            onClick = { if (!uiState.isBatchMode) viewModel.toggleBatchMode() }
+                        ) {
+                            Text(
+                                text = "Batch Scan",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                        }
                     }
                 }
             }
