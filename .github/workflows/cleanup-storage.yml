@@ -1,0 +1,55 @@
+name: Clean GitHub Storage
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/cleanup-storage.yml'
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  cleanup:
+    name: Purge Old Artifacts & History
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Delete All Stored Artifacts (Free 500MB Quota)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Fetching and Deleting all artifacts to free 500MB quota ==="
+          ARTIFACT_IDS=$(gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts[].id' 2>/dev/null || true)
+          if [ -z "$ARTIFACT_IDS" ]; then
+            echo "No artifacts found."
+          else
+            for id in $ARTIFACT_IDS; do
+              echo "Deleting artifact ID: $id"
+              gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+            done
+            echo "All artifacts deleted successfully!"
+          fi
+
+      - name: Delete Old Completed Workflow Runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "=== Cleaning old workflow history runs ==="
+          CURRENT_RUN="${{ github.run_id }}"
+          RUN_IDS=$(gh api repos/${{ github.repository }}/actions/runs --paginate --jq '.workflow_runs[] | select(.status=="completed") | .id' 2>/dev/null || true)
+          if [ -z "$RUN_IDS" ]; then
+            echo "No completed workflow runs found."
+          else
+            for run_id in $RUN_IDS; do
+              if [ "$run_id" != "$CURRENT_RUN" ]; then
+                echo "Deleting old run ID: $run_id"
+                gh api -X DELETE "repos/${{ github.repository }}/actions/runs/$run_id" || true
+              fi
+            done
+            echo "Old workflow history cleaned successfully!"
+          fi
