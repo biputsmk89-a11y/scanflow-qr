@@ -11,4 +11,6 @@ Tabel indeks referensi cepat pencarian bug di seluruh proyek:
 | BUG-005 | Link email & SMS berantakan jika mengandung spasi atau karakter khusus | Android / RFC | Parameter `subject` dan `body` tidak di-encode dengan `URLEncoder.encode` | Terapkan `URLEncoder.encode(..., "UTF-8").replace("+", "%20")` pada pembentukan payload mailto | ScanFlow QR | VERIFIED |
 | BUG-006 | Ukuran APK membengkak pada build rilis | Android / Gradle | R8 shrinking atau resource shrinking nonaktif, baseline profiles belum terkompilasi | Aktifkan `isMinifyEnabled = true`, `isShrinkResources = true`, dan optimasi ProGuard rules | ScanFlow QR | VERIFIED |
 | BUG-007 | GitHub Actions gagal: `Artifact storage quota has been hit` | GitHub Actions / CI | `actions/upload-artifact@v4` melebihi kuota 500MB dengan retensi 30 hari | Pindahkan `Publish GitHub Release` sebelum artifact upload, beri `continue-on-error: true`, dan turunkan retensi ke 1 hari | ScanFlow QR | VERIFIED |
+| BUG-008 | Crash: `Attempt to invoke virtual method 'String BottomNavItem.getRoute()' on null object reference` | Android / Kotlin | Circular static initialization: Companion object mengevaluasi `listOf(Home, ...)` sebelum sub-objects selesai `<clinit>` | Gunakan custom getter `val items: List<BottomNavItem> get() = listOf(...)` dan `.filterNotNull()` | ScanFlow QR | VERIFIED |
+
 

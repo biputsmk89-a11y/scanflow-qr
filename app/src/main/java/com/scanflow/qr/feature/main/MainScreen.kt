@@ -63,7 +63,7 @@ fun MainScreen(
                 containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp
             ) {
-                BottomNavItem.items.forEach { item ->
+                BottomNavItem.items.filterNotNull().forEach { item ->
                     if (item == BottomNavItem.Scan) {
                         // Hero Center Scan Button
                         Box(

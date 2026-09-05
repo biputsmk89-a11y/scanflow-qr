@@ -41,6 +41,7 @@ sealed class BottomNavItem(
     data object Profile : BottomNavItem("profile_tab", "Profile", Icons.Default.Person)
 
     companion object {
-        val items = listOf(Home, Scan, Create, History, Profile)
+        val items: List<BottomNavItem>
+            get() = listOf(Home, Scan, Create, History, Profile)
     }
 }
