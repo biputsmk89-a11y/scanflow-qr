@@ -58,6 +58,8 @@ import com.scanflow.qr.core.utils.ShareHelper
 import com.scanflow.qr.domain.model.QrStyleConfig
 import com.scanflow.qr.domain.model.UserQrCode
 import com.scanflow.qr.domain.repository.QrGeneratorRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -70,7 +72,8 @@ data class MyQrUiState(
     val isLoading: Boolean = false
 )
 
-class MyQrViewModel(
+@HiltViewModel
+class MyQrViewModel @Inject constructor(
     private val qrRepository: QrGeneratorRepository
 ) : ViewModel() {
 

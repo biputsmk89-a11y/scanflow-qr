@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt.android)
 }
 
 import java.io.FileInputStream
@@ -138,12 +139,13 @@ dependencies {
     // DataStore Preferences
     implementation(libs.androidx.datastore.preferences)
 
-    // CameraX & ML Kit
+    // CameraX & ML Kit (Google Play Services Unbundled Dynamic Delivery)
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    implementation(libs.google.mlkit.barcode)
+    implementation(libs.play.services.mlkit.barcode)
+    implementation(libs.play.services.code.scanner)
 
     // QR Code Engine & Coil Image Loader
     implementation(libs.zxing.core)
@@ -151,6 +153,11 @@ dependencies {
 
     // Security & Biometrics
     implementation(libs.androidx.biometric)
+
+    // Dependency Injection - Dagger Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
 
     // Coroutines & Serialization
     implementation(libs.kotlinx.coroutines.core)

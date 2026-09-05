@@ -46,6 +46,7 @@ interface SettingsRepository {
     suspend fun updateBiometric(enabled: Boolean)
     suspend fun updatePinCode(pin: String?)
     suspend fun setOnboardingCompleted(completed: Boolean)
+    suspend fun updateDynamicColor(enabled: Boolean)
 }
 
 interface AuthRepository {

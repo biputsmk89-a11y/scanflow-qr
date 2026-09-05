@@ -8,6 +8,8 @@ import com.scanflow.qr.domain.repository.HistoryRepository
 import com.scanflow.qr.domain.usecase.DeleteHistoryUseCase
 import com.scanflow.qr.domain.usecase.GetHistoryUseCase
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +28,8 @@ data class HistoryUiState(
     val isLoading: Boolean = false
 )
 
-class HistoryViewModel(
+@HiltViewModel
+class HistoryViewModel @Inject constructor(
     private val historyRepository: HistoryRepository,
     private val getHistoryUseCase: GetHistoryUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase,

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.scanflow.qr.domain.model.QrType
 import com.scanflow.qr.domain.model.UserQrCode
 import com.scanflow.qr.domain.repository.QrGeneratorRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -50,7 +52,8 @@ data class CreateQrUiState(
     val errorMessage: String? = null
 )
 
-class CreateQrViewModel(
+@HiltViewModel
+class CreateQrViewModel @Inject constructor(
     private val qrRepository: QrGeneratorRepository
 ) : ViewModel() {
 

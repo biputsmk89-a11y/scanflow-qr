@@ -57,6 +57,8 @@ import com.scanflow.qr.domain.model.UserQrCode
 import com.scanflow.qr.domain.repository.FavoriteRepository
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
 import kotlinx.coroutines.flow.SharingStarted
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
@@ -69,7 +71,8 @@ data class FavoritesUiState(
     val isLoading: Boolean = false
 )
 
-class FavoritesViewModel(
+@HiltViewModel
+class FavoritesViewModel @Inject constructor(
     favoriteRepository: FavoriteRepository,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {

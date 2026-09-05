@@ -30,21 +30,20 @@ import com.scanflow.qr.domain.usecase.ShareQrCodeUseCase
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
 import com.scanflow.qr.domain.usecase.UpdateSettingsUseCase
 
+import com.scanflow.qr.core.crash.CrashRecoveryHandler
 import com.scanflow.qr.core.di.AppContainer
 import com.scanflow.qr.core.di.DefaultAppContainer
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class ScanFlowApplication : Application() {
 
     lateinit var container: AppContainer
 
     override fun onCreate() {
         super.onCreate()
+        CrashRecoveryHandler.install(this)
         container = DefaultAppContainer(this)
-        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            android.util.Log.e("ScanFlowApplication", "Uncaught exception on thread ${thread.name}: ${throwable.message}", throwable)
-            defaultHandler?.uncaughtException(thread, throwable)
-        }
     }
 
     val database: ScanFlowDatabase get() = container.database

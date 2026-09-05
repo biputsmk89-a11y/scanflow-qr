@@ -15,7 +15,8 @@ data class AppSettings(
     val isAppLockEnabled: Boolean = false,
     val isBiometricEnabled: Boolean = false,
     val pinCode: String? = null,
-    val isOnboardingCompleted: Boolean = false
+    val isOnboardingCompleted: Boolean = false,
+    val isDynamicColorEnabled: Boolean = true
 )
 
 data class AuthUser(

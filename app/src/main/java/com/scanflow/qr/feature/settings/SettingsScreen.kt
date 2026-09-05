@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.OpenInBrowser
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.VolumeUp
@@ -67,12 +68,15 @@ import com.scanflow.qr.domain.model.AppSettings
 import com.scanflow.qr.domain.model.AppThemeMode
 import com.scanflow.qr.domain.usecase.GetSettingsUseCase
 import com.scanflow.qr.domain.usecase.UpdateSettingsUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     getSettingsUseCase: GetSettingsUseCase,
     private val updateSettingsUseCase: UpdateSettingsUseCase
 ) : ViewModel() {
@@ -86,6 +90,10 @@ class SettingsViewModel(
 
     fun setTheme(mode: AppThemeMode) {
         viewModelScope.launch { updateSettingsUseCase.updateTheme(mode) }
+    }
+
+    fun toggleDynamicColor(enabled: Boolean) {
+        viewModelScope.launch { updateSettingsUseCase.updateDynamicColor(enabled) }
     }
 
     fun toggleVibrate(enabled: Boolean) {
@@ -229,6 +237,14 @@ fun SettingsScreen(
                             }
                             viewModel.setTheme(nextMode)
                         }
+                    )
+                    Divider(color = MaterialTheme.colorScheme.outline)
+                    SettingToggleRow(
+                        title = "Warna Dinamis (Material You)",
+                        subtitle = "Sesuaikan warna aksen dengan wallpaper perangkat (Android 12+)",
+                        icon = Icons.Default.Palette,
+                        checked = settings.isDynamicColorEnabled,
+                        onCheckedChange = { viewModel.toggleDynamicColor(it) }
                     )
                 }
             }

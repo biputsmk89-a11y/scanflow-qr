@@ -154,6 +154,10 @@ class SettingsRepositoryImpl(
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         preferencesManager.setOnboardingCompleted(completed)
     }
+
+    override suspend fun updateDynamicColor(enabled: Boolean) {
+        preferencesManager.updateDynamicColor(enabled)
+    }
 }
 
 class LocalGuestAuthRepository : AuthRepository {

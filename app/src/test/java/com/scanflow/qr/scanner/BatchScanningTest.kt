@@ -70,6 +70,7 @@ class FakeSettingsRepository : SettingsRepository {
     override suspend fun updateBiometric(enabled: Boolean) {}
     override suspend fun updatePinCode(pin: String?) {}
     override suspend fun setOnboardingCompleted(completed: Boolean) {}
+    override suspend fun updateDynamicColor(enabled: Boolean) {}
 }
 
 class FakeHistoryRepository : HistoryRepository {

@@ -27,8 +27,7 @@ import com.scanflow.qr.feature.result.ScanResultViewModel
 import com.scanflow.qr.feature.scanner.ScannerScreen
 import com.scanflow.qr.feature.scanner.ScannerViewModel
 import com.scanflow.qr.feature.security.SecurityScreen
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.scanflow.qr.core.di.AppViewModelProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.scanflow.qr.feature.security.SecurityViewModel
 import com.scanflow.qr.feature.settings.SettingsScreen
 import com.scanflow.qr.feature.settings.SettingsViewModel
@@ -39,17 +38,17 @@ fun ScanFlowNavGraph(
     navController: NavHostController,
     isOnboardingCompleted: Boolean,
     onCompleteOnboarding: () -> Unit,
-    homeViewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    scannerViewModel: ScannerViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    scanResultViewModel: ScanResultViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    createQrViewModel: CreateQrViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    qrPreviewViewModel: QrPreviewViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    historyViewModel: HistoryViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    favoritesViewModel: FavoritesViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    myQrViewModel: MyQrViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    settingsViewModel: SettingsViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    securityViewModel: SecurityViewModel = viewModel(factory = AppViewModelProvider.Factory),
-    analyticsViewModel: AnalyticsViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    homeViewModel: HomeViewModel = hiltViewModel(),
+    scannerViewModel: ScannerViewModel = hiltViewModel(),
+    scanResultViewModel: ScanResultViewModel = hiltViewModel(),
+    createQrViewModel: CreateQrViewModel = hiltViewModel(),
+    qrPreviewViewModel: QrPreviewViewModel = hiltViewModel(),
+    historyViewModel: HistoryViewModel = hiltViewModel(),
+    favoritesViewModel: FavoritesViewModel = hiltViewModel(),
+    myQrViewModel: MyQrViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
+    securityViewModel: SecurityViewModel = hiltViewModel(),
+    analyticsViewModel: AnalyticsViewModel = hiltViewModel()
 ) {
     NavHost(
         navController = navController,

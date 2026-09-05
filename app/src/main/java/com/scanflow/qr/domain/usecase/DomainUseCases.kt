@@ -96,6 +96,7 @@ class UpdateSettingsUseCase(private val repository: SettingsRepository) {
     suspend fun updateBiometric(enabled: Boolean) = repository.updateBiometric(enabled)
     suspend fun updatePin(pin: String?) = repository.updatePinCode(pin)
     suspend fun completeOnboarding() = repository.setOnboardingCompleted(true)
+    suspend fun updateDynamicColor(enabled: Boolean) = repository.updateDynamicColor(enabled)
 }
 
 class GetAnalyticsSummaryUseCase(

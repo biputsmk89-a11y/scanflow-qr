@@ -54,7 +54,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.stateIn
 
-class AnalyticsViewModel(
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+
+@HiltViewModel
+class AnalyticsViewModel @Inject constructor(
     getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase
 ) : ViewModel() {
 

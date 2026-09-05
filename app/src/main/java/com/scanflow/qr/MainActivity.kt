@@ -21,17 +21,26 @@ import com.scanflow.qr.core.navigation.ScanFlowNavGraph
 import com.scanflow.qr.core.security.BiometricAuthManager
 import com.scanflow.qr.domain.model.AppSettings
 import com.scanflow.qr.domain.model.AppThemeMode
+import com.scanflow.qr.domain.repository.SettingsRepository
+import com.scanflow.qr.domain.usecase.UpdateSettingsUseCase
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class MainActivity : FragmentActivity() {
+
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
+    @Inject
+    lateinit var updateSettingsUseCase: UpdateSettingsUseCase
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val app = application as ScanFlowApplication
-
         setContent {
-            val settings by app.settingsRepository.settingsFlow.collectAsState(
+            val settings by settingsRepository.settingsFlow.collectAsState(
                 initial = AppSettings()
             )
 
@@ -60,7 +69,10 @@ class MainActivity : FragmentActivity() {
                 }
             }
 
-            ScanFlowQRTheme(darkTheme = isDarkTheme) {
+            ScanFlowQRTheme(
+                darkTheme = isDarkTheme,
+                dynamicColor = settings.isDynamicColorEnabled
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -73,7 +85,7 @@ class MainActivity : FragmentActivity() {
                             isOnboardingCompleted = settings.isOnboardingCompleted,
                             onCompleteOnboarding = {
                                 scope.launch {
-                                    app.updateSettingsUseCase.completeOnboarding()
+                                    updateSettingsUseCase.completeOnboarding()
                                 }
                             }
                         )

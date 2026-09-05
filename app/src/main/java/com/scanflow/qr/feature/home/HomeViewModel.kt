@@ -7,6 +7,8 @@ import com.scanflow.qr.domain.model.ScanHistoryItem
 import com.scanflow.qr.domain.usecase.GetAnalyticsSummaryUseCase
 import com.scanflow.qr.domain.usecase.GetHistoryUseCase
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -20,7 +22,8 @@ data class HomeUiState(
     val isLoading: Boolean = false
 )
 
-class HomeViewModel(
+@HiltViewModel
+class HomeViewModel @Inject constructor(
     private val getHistoryUseCase: GetHistoryUseCase,
     private val getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase

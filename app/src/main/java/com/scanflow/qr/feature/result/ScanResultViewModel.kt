@@ -13,6 +13,8 @@ import com.scanflow.qr.domain.model.ScanHistoryItem
 import com.scanflow.qr.domain.model.SecurityAssessment
 import com.scanflow.qr.domain.repository.HistoryRepository
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +28,8 @@ data class ScanResultUiState(
     val isDeleted: Boolean = false
 )
 
-class ScanResultViewModel(
+@HiltViewModel
+class ScanResultViewModel @Inject constructor(
     private val historyRepository: HistoryRepository,
     private val toggleFavoriteUseCase: ToggleFavoriteUseCase
 ) : ViewModel() {

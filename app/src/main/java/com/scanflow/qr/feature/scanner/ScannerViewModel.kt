@@ -14,6 +14,8 @@ import com.scanflow.qr.domain.usecase.DeleteHistoryUseCase
 import com.scanflow.qr.domain.usecase.GetSettingsUseCase
 import com.scanflow.qr.domain.usecase.ParseQrCodeUseCase
 import com.scanflow.qr.domain.usecase.SaveScanResultUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,11 +49,12 @@ data class ScannerUiState(
     val errorMessage: String? = null
 )
 
-class ScannerViewModel(
+@HiltViewModel
+class ScannerViewModel @Inject constructor(
     private val parseQrCodeUseCase: ParseQrCodeUseCase,
     private val saveScanResultUseCase: SaveScanResultUseCase,
     private val getSettingsUseCase: GetSettingsUseCase,
-    private val deleteHistoryUseCase: DeleteHistoryUseCase? = null
+    private val deleteHistoryUseCase: DeleteHistoryUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScannerUiState())

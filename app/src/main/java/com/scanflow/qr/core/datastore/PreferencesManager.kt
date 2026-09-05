@@ -33,6 +33,7 @@ class PreferencesManager(private val context: Context) {
     private val KEY_BIOMETRIC = booleanPreferencesKey("is_biometric_enabled")
     private val KEY_PIN_CODE = stringPreferencesKey("pin_code")
     private val KEY_ONBOARDING = booleanPreferencesKey("is_onboarding_completed")
+    private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("is_dynamic_color_enabled")
 
     // Cloud Auth & Session
     private val KEY_USER_ID = stringPreferencesKey("auth_user_id")
@@ -45,8 +46,11 @@ class PreferencesManager(private val context: Context) {
 
     val settingsFlow: Flow<AppSettings> = context.dataStore.data
         .catch { exception ->
-            exception.printStackTrace()
-            emit(androidx.datastore.preferences.core.emptyPreferences())
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
         }
         .map { pref ->
             AppSettings(
@@ -62,7 +66,8 @@ class PreferencesManager(private val context: Context) {
                 isAppLockEnabled = pref[KEY_APP_LOCK] ?: false,
                 isBiometricEnabled = pref[KEY_BIOMETRIC] ?: false,
                 pinCode = pref[KEY_PIN_CODE],
-                isOnboardingCompleted = pref[KEY_ONBOARDING] ?: false
+                isOnboardingCompleted = pref[KEY_ONBOARDING] ?: false,
+                isDynamicColorEnabled = pref[KEY_DYNAMIC_COLOR] ?: true
             )
         }
 
@@ -94,6 +99,10 @@ class PreferencesManager(private val context: Context) {
 
     suspend fun updateBiometric(enabled: Boolean) {
         context.dataStore.edit { pref -> pref[KEY_BIOMETRIC] = enabled }
+    }
+
+    suspend fun updateDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { pref -> pref[KEY_DYNAMIC_COLOR] = enabled }
     }
 
     private fun hashPin(pin: String): String {

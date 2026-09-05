@@ -6,6 +6,8 @@ import com.scanflow.qr.domain.model.AuthUser
 import com.scanflow.qr.domain.model.SyncStatus
 import com.scanflow.qr.domain.repository.AuthRepository
 import com.scanflow.qr.domain.repository.SyncRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,8 @@ data class ProfileUiState(
     val feedbackMessage: String? = null
 )
 
-class ProfileViewModel(
+@HiltViewModel
+class ProfileViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository
 ) : ViewModel() {

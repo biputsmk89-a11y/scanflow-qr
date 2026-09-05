@@ -74,6 +74,26 @@ class SettingsAndSecurityViewModelTest {
     }
 
     @Test
+    fun `SettingsViewModel toggles Material You dynamic color preference`() = runTest(testDispatcher) {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            settingsViewModel.settings.collect {}
+        }
+        advanceUntilIdle()
+
+        assertThat(settingsViewModel.settings.value.isDynamicColorEnabled).isTrue()
+
+        settingsViewModel.toggleDynamicColor(false)
+        advanceUntilIdle()
+
+        assertThat(settingsViewModel.settings.value.isDynamicColorEnabled).isFalse()
+
+        settingsViewModel.toggleDynamicColor(true)
+        advanceUntilIdle()
+
+        assertThat(settingsViewModel.settings.value.isDynamicColorEnabled).isTrue()
+    }
+
+    @Test
     fun `SettingsViewModel toggles scanning preferences`() = runTest(testDispatcher) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             settingsViewModel.settings.collect {}

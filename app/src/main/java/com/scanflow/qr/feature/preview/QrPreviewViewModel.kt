@@ -12,6 +12,8 @@ import com.scanflow.qr.domain.model.QrPatternStyle
 import com.scanflow.qr.domain.model.QrStyleConfig
 import com.scanflow.qr.domain.model.UserQrCode
 import com.scanflow.qr.domain.repository.QrGeneratorRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +29,8 @@ data class QrPreviewUiState(
     val errorMessage: String? = null
 )
 
-class QrPreviewViewModel(
+@HiltViewModel
+class QrPreviewViewModel @Inject constructor(
     private val qrRepository: QrGeneratorRepository
 ) : ViewModel() {
 

@@ -188,5 +188,9 @@ class FakeSettingsRepository(
     override suspend fun setOnboardingCompleted(completed: Boolean) {
         _settings.value = _settings.value.copy(isOnboardingCompleted = completed)
     }
+
+    override suspend fun updateDynamicColor(enabled: Boolean) {
+        _settings.value = _settings.value.copy(isDynamicColorEnabled = enabled)
+    }
 }
 
