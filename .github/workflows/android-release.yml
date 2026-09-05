@@ -13,13 +13,11 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
-
-env:
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
 jobs:
   release:
@@ -27,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
 
     steps:
       - name: Checkout Source Code
@@ -35,7 +34,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -148,6 +147,20 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+          make_latest: true
+
+      - name: Prune Old Workflow Artifacts
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Pruning older GitHub Actions artifacts to free up storage quota..."
+          gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts[].id' 2>/dev/null | tail -n +5 | while read -r id; do
+            if [ -n "$id" ]; then
+              echo "Deleting old artifact ID: $id"
+              gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+            fi
+          done
 
       - name: Upload Release APK Artifact
         uses: actions/upload-artifact@v4
