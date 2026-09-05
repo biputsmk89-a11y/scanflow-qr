@@ -65,10 +65,10 @@ jobs:
       - name: Configure Signing Credentials
         id: signing_config
         env:
-          KEYSTORE_BASE64_SECRET: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
-          KEYSTORE_PASS_SECRET: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
-          KEY_PASS_SECRET: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_BASE64_SECRET: ${{ secrets['SIGNING_KEYSTORE_BASE64'] }}
+          KEYSTORE_PASS_SECRET: ${{ secrets['KEYSTORE_PASSWORD'] }}
+          KEY_ALIAS_SECRET: ${{ secrets['KEY_ALIAS'] }}
+          KEY_PASS_SECRET: ${{ secrets['KEY_PASSWORD'] }}
         run: |
           if [ -n "$KEYSTORE_BASE64_SECRET" ]; then
             echo "$KEYSTORE_BASE64_SECRET" | base64 --decode > "${RUNNER_TEMP}/release.keystore"

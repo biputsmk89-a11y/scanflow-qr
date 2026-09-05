@@ -113,6 +113,12 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("test") {
+            java.srcDirs("src/test/java")
+        }
+    }
+
     testOptions {
         unitTests {
             isReturnDefaultValues = true
