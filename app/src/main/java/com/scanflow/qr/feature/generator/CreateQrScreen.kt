@@ -26,29 +26,48 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.ContactPage
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.QrCode2
+import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -58,6 +77,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -116,7 +139,13 @@ fun CreateQrScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (isFormOpen) uiState.selectedType.displayName else "ScanFlow QR",
+                        text = if (isFormOpen) {
+                            when (uiState.selectedType) {
+                                QrType.WIFI -> "Create WiFi QR"
+                                QrType.PAYMENT -> "ScanFlow QR"
+                                else -> uiState.selectedType.displayName
+                            }
+                        } else "ScanFlow QR",
                         fontWeight = FontWeight.Bold,
                         color = ElectricBlue
                     )
@@ -135,6 +164,15 @@ fun CreateQrScreen(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { /* Settings */ }) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -202,14 +240,40 @@ fun CreateQrScreen(
                     }
                 }
             } else {
-                // Form Generator for Selected Type
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = Dimens.Spacing20)
-                ) {
-                    // Back to Categories Pill
+                when (uiState.selectedType) {
+                    QrType.WIFI -> {
+                        StitchWifiGeneratorView(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onBack = { isFormOpen = false },
+                            onGenerate = {
+                                viewModel.generateAndSaveQr { newId ->
+                                    onNavigateToPreview(newId)
+                                }
+                            }
+                        )
+                    }
+                    QrType.PAYMENT -> {
+                        StitchPaymentGeneratorView(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onBack = { isFormOpen = false },
+                            onGenerate = {
+                                viewModel.generateAndSaveQr { newId ->
+                                    onNavigateToPreview(newId)
+                                }
+                            }
+                        )
+                    }
+                    else -> {
+                        // Form Generator for Other Selected Types
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = Dimens.Spacing20)
+                        ) {
+                            // Back to Categories Pill
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -523,6 +587,465 @@ fun CreateQrScreen(
                 }
             }
         }
+    }
+}
+}
+}
+
+/**
+ * Stitch WiFi QR Generator View (Exact Google Stitch UI/UX)
+ */
+@Composable
+private fun StitchWifiGeneratorView(
+    uiState: CreateQrUiState,
+    viewModel: CreateQrViewModel,
+    onBack: () -> Unit,
+    onGenerate: () -> Unit
+) {
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Dimens.Spacing20),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Change Type Pill Button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            ScanFlowSecondaryButton(
+                text = "← Change Type",
+                onClick = onBack
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Hero Section (Exact Stitch)
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .background(ElectricBlue.copy(alpha = 0.12f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Wifi,
+                contentDescription = "WiFi",
+                tint = ElectricBlue,
+                modifier = Modifier.size(36.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Text(
+            text = "WiFi Network",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Instantly share your network connection without revealing your password.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Form Card (Elevation & Subtle Border)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            shadowElevation = 2.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Network Name (SSID)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Network Name (SSID)",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    ScanFlowTextField(
+                        value = uiState.wifiSsid,
+                        onValueChange = { viewModel.updateField { copy(wifiSsid = it) } },
+                        label = "",
+                        placeholder = "e.g., Home_Network_5G",
+                        leadingIcon = Icons.Default.Router,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Password
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Password",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    OutlinedTextField(
+                        value = uiState.wifiPassword,
+                        onValueChange = { viewModel.updateField { copy(wifiPassword = it) } },
+                        placeholder = { Text("Enter network password") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(
+                                    imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ElectricBlue,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            focusedContainerColor = ElectricBlue.copy(alpha = 0.04f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Security Type
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Security Type",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            "WPA" to "WPA/WPA2",
+                            "WPA3" to "WPA3",
+                            "WEP" to "WEP",
+                            "nopass" to "None (Open)"
+                        ).forEach { (sec, label) ->
+                            ScanFlowChip(
+                                text = label,
+                                selected = uiState.wifiSecurity == sec,
+                                onClick = { viewModel.updateField { copy(wifiSecurity = sec) } }
+                            )
+                        }
+                    }
+                }
+
+                // Hidden Network
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Hidden Network",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "SSID doesn't broadcast",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = uiState.wifiHidden,
+                            onCheckedChange = { viewModel.updateField { copy(wifiHidden = it) } },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = ElectricBlue
+                            )
+                        )
+                    }
+                }
+
+                if (uiState.errorMessage != null) {
+                    Text(
+                        text = uiState.errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = Dimens.Spacing4)
+                    )
+                }
+
+                // Generate Button (Pill shaped)
+                Button(
+                    onClick = onGenerate,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(27.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ElectricBlue,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Generate WiFi QR",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(100.dp))
+    }
+}
+
+/**
+ * Stitch Payment QR Generator View (Exact Google Stitch UI/UX)
+ */
+@Composable
+private fun StitchPaymentGeneratorView(
+    uiState: CreateQrUiState,
+    viewModel: CreateQrViewModel,
+    onBack: () -> Unit,
+    onGenerate: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Dimens.Spacing20),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Change Type Pill Button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            ScanFlowSecondaryButton(
+                text = "← Change Type",
+                onClick = onBack
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Hero Section (Exact Stitch)
+        Text(
+            text = "Create Payment QR",
+            style = MaterialTheme.typography.headlineLarge,
+            fontWeight = FontWeight.Bold,
+            color = ElectricBlue,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Text(
+            text = "Generate a secure QR code for fast, contactless payments.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Form Card (Surface Low Container)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+            shadowElevation = 1.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Merchant Name
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Merchant Name",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    ScanFlowTextField(
+                        value = uiState.paymentPayeeName,
+                        onValueChange = { viewModel.updateField { copy(paymentPayeeName = it) } },
+                        label = "",
+                        placeholder = "e.g. Acme Corp",
+                        leadingIcon = Icons.Default.Storefront,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Amount
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Amount",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    ScanFlowTextField(
+                        value = uiState.paymentAmount,
+                        onValueChange = { viewModel.updateField { copy(paymentAmount = it) } },
+                        label = "",
+                        placeholder = "0.00",
+                        leadingIcon = Icons.Default.AttachMoney,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Reference (Optional)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Reference (Optional)",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    ScanFlowTextField(
+                        value = uiState.paymentReference,
+                        onValueChange = { viewModel.updateField { copy(paymentReference = it) } },
+                        label = "",
+                        placeholder = "Invoice #12345",
+                        leadingIcon = Icons.Default.ReceiptLong,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                // Payment URL / ID
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = "Payment URL / ID",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    ScanFlowTextField(
+                        value = uiState.paymentAddress,
+                        onValueChange = { viewModel.updateField { copy(paymentAddress = it) } },
+                        label = "",
+                        placeholder = "https://pay.stripe.com/...",
+                        leadingIcon = Icons.Default.Link,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (uiState.errorMessage != null) {
+                    Text(
+                        text = uiState.errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = Dimens.Spacing4)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Generate Button (Pill shaped)
+                Button(
+                    onClick = onGenerate,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(27.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ElectricBlue,
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode2,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Generate Payment QR",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Security Banner (Exact Stitch)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = CyanAccent.copy(alpha = 0.1f),
+                    border = BorderStroke(1.dp, CyanAccent.copy(alpha = 0.25f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = null,
+                            tint = ElectricBlue,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Always verify payment details before completing a transaction. Generated codes are encrypted for security.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 

@@ -201,13 +201,15 @@ fun ScanFlowTextField(
     isError: Boolean = false,
     errorMessage: String? = null,
     singleLine: Boolean = true,
-    maxLines: Int = 1
+    maxLines: Int = 1,
+    keyboardOptions: androidx.compose.foundation.text.KeyboardOptions = androidx.compose.foundation.text.KeyboardOptions.Default,
+    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None
 ) {
     Column(modifier = modifier) {
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text(label) },
+            label = if (label.isNotEmpty()) { { Text(label) } } else null,
             placeholder = { Text(placeholder) },
             leadingIcon = if (leadingIcon != null) {
                 { Icon(imageVector = leadingIcon, contentDescription = null) }
@@ -216,6 +218,8 @@ fun ScanFlowTextField(
             isError = isError,
             singleLine = singleLine,
             maxLines = maxLines,
+            keyboardOptions = keyboardOptions,
+            visualTransformation = visualTransformation,
             shape = RoundedCornerShape(Dimens.CornerRadiusButton),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,

@@ -48,6 +48,7 @@ data class CreateQrUiState(
     val paymentType: String = "UPI",
     val paymentPayeeName: String = "",
     val paymentAmount: String = "",
+    val paymentReference: String = "",
     // Social
     val socialPlatform: String = "Instagram",
     val socialUsername: String = "",
@@ -117,7 +118,14 @@ class CreateQrViewModel @Inject constructor(
                 else {
                     val safeSsid = escapeWifi(ssid)
                     val safePass = escapeWifi(state.wifiPassword.trim())
-                    val payload = "WIFI:T:${state.wifiSecurity};S:$safeSsid;P:$safePass;H:${state.wifiHidden};;"
+                    val secType = when (state.wifiSecurity) {
+                        "WPA/WPA2", "WPA" -> "WPA"
+                        "WPA3" -> "SAE"
+                        "WEP" -> "WEP"
+                        "nopass", "None" -> "nopass"
+                        else -> state.wifiSecurity
+                    }
+                    val payload = "WIFI:T:$secType;S:$safeSsid;P:$safePass;H:${state.wifiHidden};;"
                     payload to "Wi-Fi: $ssid"
                 }
             }
@@ -196,19 +204,39 @@ class CreateQrViewModel @Inject constructor(
             }
             QrType.PAYMENT -> {
                 val addr = state.paymentAddress.trim()
-                if (addr.isEmpty()) "" to ""
+                val payee = state.paymentPayeeName.trim()
+                val amount = state.paymentAmount.trim()
+                val ref = state.paymentReference.trim()
+
+                if (addr.isEmpty() && payee.isEmpty()) "" to ""
                 else {
-                    val payload = when (state.paymentType) {
-                        "UPI" -> {
-                            val pn = if (state.paymentPayeeName.isNotEmpty()) "&pn=${encodeUriParam(state.paymentPayeeName.trim())}" else ""
-                            val am = if (state.paymentAmount.isNotEmpty()) "&am=${state.paymentAmount.trim()}" else ""
-                            "upi://pay?pa=$addr$pn$am"
+                    val payload = when {
+                        addr.startsWith("http://", ignoreCase = true) || addr.startsWith("https://", ignoreCase = true) -> addr
+                        state.paymentType == "UPI" -> {
+                            val pa = if (addr.isNotEmpty()) addr else "merchant@upi"
+                            val pn = if (payee.isNotEmpty()) "&pn=${encodeUriParam(payee)}" else ""
+                            val am = if (amount.isNotEmpty()) "&am=$amount" else ""
+                            val tr = if (ref.isNotEmpty()) "&tr=${encodeUriParam(ref)}" else ""
+                            "upi://pay?pa=$pa$pn$am$tr"
                         }
-                        "Bitcoin" -> "bitcoin:$addr"
-                        "Ethereum" -> "ethereum:$addr"
-                        else -> "https://paypal.me/$addr"
+                        state.paymentType == "Bitcoin" -> {
+                            val am = if (amount.isNotEmpty()) "?amount=$amount" else ""
+                            "bitcoin:$addr$am"
+                        }
+                        state.paymentType == "Ethereum" -> {
+                            val am = if (amount.isNotEmpty()) "?value=$amount" else ""
+                            "ethereum:$addr$am"
+                        }
+                        else -> {
+                            if (addr.isNotEmpty()) "https://paypal.me/$addr" else "https://pay.stripe.com"
+                        }
                     }
-                    payload to "${state.paymentType} Payment"
+                    val title = if (payee.isNotEmpty()) {
+                        if (amount.isNotEmpty()) "Payment to $payee ($amount)" else "Payment to $payee"
+                    } else {
+                        "Payment QR"
+                    }
+                    payload to title
                 }
             }
             QrType.SOCIAL -> {
