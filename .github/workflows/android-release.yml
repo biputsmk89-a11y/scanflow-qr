@@ -18,6 +18,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+
 jobs:
   release:
     name: Build Signed APK & AAB
@@ -131,23 +134,9 @@ jobs:
           ls -lh "$APK_DEST"
           ls -lh "$AAB_DEST"
 
-      - name: Upload Release APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ScanFlow-QR-APK
-          path: ${{ steps.artifacts_step.outputs.apk_path }}
-          retention-days: 30
-
-      - name: Upload Release AAB Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ScanFlow-QR-AAB
-          path: ${{ steps.artifacts_step.outputs.aab_path }}
-          retention-days: 30
-
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -159,6 +148,22 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ScanFlow-QR-APK
+          path: ${{ steps.artifacts_step.outputs.apk_path }}
+          retention-days: 1
+
+      - name: Upload Release AAB Artifact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: ScanFlow-QR-AAB
+          path: ${{ steps.artifacts_step.outputs.aab_path }}
+          retention-days: 1
 
       - name: Cleanup Keystore
         if: always()

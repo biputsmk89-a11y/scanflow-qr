@@ -13,6 +13,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+
 jobs:
   build:
     name: Build & Test
@@ -45,7 +48,9 @@ jobs:
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: ScanFlow-QR-debug
           path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 14
+          retention-days: 1
+
