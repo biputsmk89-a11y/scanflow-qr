@@ -43,11 +43,20 @@ android {
             val keyPassword = System.getenv("KEY_PASSWORD")
                 ?: keystoreProperties.getProperty("KEY_PASSWORD")
 
-            if (!keyStorePath.isNullOrEmpty() && file(keyStorePath).exists()) {
-                storeFile = file(keyStorePath)
+            val resolvedKeystore = when {
+                keyStorePath.isNullOrEmpty() -> null
+                file(keyStorePath).exists() -> file(keyStorePath)
+                rootProject.file(keyStorePath).exists() -> rootProject.file(keyStorePath)
+                else -> null
+            }
+
+            if (resolvedKeystore != null && resolvedKeystore.exists()) {
+                storeFile = resolvedKeystore
                 storePassword = keyStorePassword
                 keyAlias = keyAliasName
                 this.keyPassword = keyPassword
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }
@@ -63,6 +72,8 @@ android {
             val releaseSigning = signingConfigs.getByName("release")
             if (releaseSigning.storeFile != null && releaseSigning.storeFile!!.exists()) {
                 signingConfig = releaseSigning
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
             }
         }
         debug {
