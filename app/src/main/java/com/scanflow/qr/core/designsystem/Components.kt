@@ -1,8 +1,10 @@
 package com.scanflow.qr.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -158,17 +160,27 @@ fun ScanFlowSecondaryButton(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ScanFlowCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     backgroundColor: Color = MaterialTheme.colorScheme.surface,
     borderColor: Color = MaterialTheme.colorScheme.outline,
     cornerRadius: Dp = Dimens.CornerRadiusCard,
     content: @Composable () -> Unit
 ) {
+    val clickModifier = when {
+        onLongClick != null && onClick != null -> modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
+        onClick != null -> modifier.clickable(onClick = onClick)
+        else -> modifier
+    }
     Card(
-        modifier = if (onClick != null) modifier.clickable(onClick = onClick) else modifier,
+        modifier = clickModifier,
         shape = RoundedCornerShape(cornerRadius),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = BorderStroke(1.dp, borderColor)

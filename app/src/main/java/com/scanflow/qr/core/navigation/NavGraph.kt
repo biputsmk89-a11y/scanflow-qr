@@ -115,8 +115,6 @@ fun ScanFlowNavGraph(
                 historyViewModel = historyViewModel,
                 createQrViewModel = createQrViewModel,
                 onNavigateToScan = { navController.navigate(Screen.Scanner.route) },
-                onNavigateToCreate = { navController.navigate(Screen.CreateQr.route) },
-                onNavigateToHistory = { /* Handled via bottom bar tab switch */ },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
                 onNavigateToMyQr = { navController.navigate(Screen.MyQr.route) },
                 onNavigateToResult = { id -> navController.navigate(Screen.ScanResult.createRoute(id)) },

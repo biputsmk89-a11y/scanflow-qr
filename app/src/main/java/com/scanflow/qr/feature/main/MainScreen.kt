@@ -46,8 +46,6 @@ fun MainScreen(
     historyViewModel: HistoryViewModel,
     createQrViewModel: CreateQrViewModel,
     onNavigateToScan: () -> Unit,
-    onNavigateToCreate: () -> Unit,
-    onNavigateToHistory: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToMyQr: () -> Unit,
     onNavigateToResult: (Long) -> Unit,

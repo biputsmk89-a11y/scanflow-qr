@@ -46,34 +46,37 @@ jobs:
       - name: Determine Version Name
         id: version_step
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             TAG_VERSION="${GITHUB_REF_NAME#v}"
+            echo "version=${TAG_VERSION}" >> $GITHUB_OUTPUT
+            echo "release_tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
             echo "VERSION=${TAG_VERSION}" >> $GITHUB_ENV
-            echo "RELEASE_TAG=${GITHUB_REF_NAME}" >> $GITHUB_ENV
           else
             INPUT_VER="${{ github.event.inputs.version_name }}"
-            echo "VERSION=${INPUT_VER}" >> $GITHUB_ENV
-            echo "RELEASE_TAG=v${INPUT_VER}" >> $GITHUB_ENV
+            RESOLVED_VER="${INPUT_VER:-1.0.0}"
+            echo "version=${RESOLVED_VER}" >> $GITHUB_OUTPUT
+            echo "release_tag=v${RESOLVED_VER}" >> $GITHUB_OUTPUT
+            echo "VERSION=${RESOLVED_VER}" >> $GITHUB_ENV
           fi
 
       - name: Configure Signing Credentials
         id: signing_config
         env:
-          INPUT_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 || secrets.KEYSTORE_BASE64 }}
-          INPUT_KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASSWORD || secrets.SIGNING_KEYSTORE_PASSWORD || 'ScanFlowRelease2026!' }}
-          INPUT_KEY_ALIAS: ${{ secrets.KEY_ALIAS || secrets.SIGNING_KEY_ALIAS || 'scanflow-release-key' }}
-          INPUT_KEY_PASS: ${{ secrets.KEY_PASSWORD || secrets.SIGNING_KEY_PASSWORD || 'ScanFlowRelease2026!' }}
+          KEYSTORE_BASE64_SECRET: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS_SECRET: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+          KEY_PASS_SECRET: ${{ secrets.KEY_PASSWORD }}
         run: |
-          if [ -z "$INPUT_BASE64" ]; then
+          if [ -z "$KEYSTORE_BASE64_SECRET" ]; then
             echo "::error::Missing secret SIGNING_KEYSTORE_BASE64! Please add it in GitHub Settings > Secrets and variables > Actions."
             exit 1
           fi
           
-          echo "$INPUT_BASE64" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
+          echo "$KEYSTORE_BASE64_SECRET" | base64 --decode > "${RUNNER_TEMP}/release.keystore"
           echo "KEYSTORE_FILE=${RUNNER_TEMP}/release.keystore" >> $GITHUB_ENV
-          echo "RESOLVED_KEYSTORE_PASS=${INPUT_KEYSTORE_PASS}" >> $GITHUB_ENV
-          echo "RESOLVED_KEY_ALIAS=${INPUT_KEY_ALIAS}" >> $GITHUB_ENV
-          echo "RESOLVED_KEY_PASS=${INPUT_KEY_PASS}" >> $GITHUB_ENV
+          echo "KEYSTORE_PASSWORD=${KEYSTORE_PASS_SECRET:-ScanFlowRelease2026!}" >> $GITHUB_ENV
+          echo "KEY_ALIAS=${KEY_ALIAS_SECRET:-scanflow-release-key}" >> $GITHUB_ENV
+          echo "KEY_PASSWORD=${KEY_PASS_SECRET:-ScanFlowRelease2026!}" >> $GITHUB_ENV
           echo "Signing credentials successfully configured."
 
       - name: Clean Project Build
@@ -86,22 +89,13 @@ jobs:
         run: ./gradlew lintRelease --no-daemon
 
       - name: Build Release APK
-        env:
-          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ env.RESOLVED_KEYSTORE_PASS }}
-          KEY_ALIAS: ${{ env.RESOLVED_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ env.RESOLVED_KEY_PASS }}
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Build Release Android App Bundle (AAB)
-        env:
-          KEYSTORE_FILE: ${{ env.KEYSTORE_FILE }}
-          KEYSTORE_PASSWORD: ${{ env.RESOLVED_KEYSTORE_PASS }}
-          KEY_ALIAS: ${{ env.RESOLVED_KEY_ALIAS }}
-          KEY_PASSWORD: ${{ env.RESOLVED_KEY_PASS }}
         run: ./gradlew bundleRelease --no-daemon
 
       - name: Verify and Rename Release Artifacts
+        id: artifacts_step
         run: |
           APK_SRC="app/build/outputs/apk/release/app-release.apk"
           AAB_SRC="app/build/outputs/bundle/release/app-release.aab"
@@ -116,14 +110,15 @@ jobs:
             exit 1
           fi
           
-          APK_DEST="app/build/outputs/apk/release/ScanFlow-Qr-v${VERSION}-release.apk"
-          AAB_DEST="app/build/outputs/bundle/release/ScanFlow-Qr-v${VERSION}-release.aab"
+          VER="${VERSION:-1.0.0}"
+          APK_DEST="app/build/outputs/apk/release/ScanFlow-Qr-v${VER}-release.apk"
+          AAB_DEST="app/build/outputs/bundle/release/ScanFlow-Qr-v${VER}-release.aab"
           
           cp "$APK_SRC" "$APK_DEST"
           cp "$AAB_SRC" "$AAB_DEST"
           
-          echo "APK_FINAL_PATH=${APK_DEST}" >> $GITHUB_ENV
-          echo "AAB_FINAL_PATH=${AAB_DEST}" >> $GITHUB_ENV
+          echo "apk_path=${APK_DEST}" >> $GITHUB_OUTPUT
+          echo "aab_path=${AAB_DEST}" >> $GITHUB_OUTPUT
           
           echo "=== Verified Artifacts ==="
           ls -lh "$APK_DEST"
@@ -133,14 +128,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ScanFlow-QR-APK
-          path: ${{ env.APK_FINAL_PATH }}
+          path: ${{ steps.artifacts_step.outputs.apk_path }}
           retention-days: 30
 
       - name: Upload Release AAB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ScanFlow-QR-AAB
-          path: ${{ env.AAB_FINAL_PATH }}
+          path: ${{ steps.artifacts_step.outputs.aab_path }}
           retention-days: 30
 
       - name: Publish GitHub Release
@@ -149,11 +144,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: ScanFlow QR v${{ env.VERSION }}
+          tag_name: ${{ steps.version_step.outputs.release_tag }}
+          name: ScanFlow QR v${{ steps.version_step.outputs.version }}
           files: |
-            ${{ env.APK_FINAL_PATH }}
-            ${{ env.AAB_FINAL_PATH }}
+            ${{ steps.artifacts_step.outputs.apk_path }}
+            ${{ steps.artifacts_step.outputs.aab_path }}
           generate_release_notes: true
           draft: false
           prerelease: false

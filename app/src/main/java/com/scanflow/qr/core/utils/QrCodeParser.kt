@@ -287,14 +287,12 @@ object QrCodeParser {
     private fun parseCalendar(content: String, format: String): QrCodeData {
         var title = "Calendar Event"
         var location = ""
-        var summary = ""
 
         val lines = content.lines()
         for (line in lines) {
             when {
                 line.startsWith("SUMMARY:", ignoreCase = true) -> {
-                    summary = line.substring(8).trim()
-                    title = summary
+                    title = line.substring(8).trim()
                 }
                 line.startsWith("LOCATION:", ignoreCase = true) -> location = line.substring(9).trim()
             }

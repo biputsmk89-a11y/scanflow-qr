@@ -42,11 +42,10 @@ class HistoryViewModel @Inject constructor(
 
     val uiState: StateFlow<HistoryUiState> = combine(
         _searchQuery,
-        _selectedFilterType,
-        _selectedIds
-    ) { query, filterType, selectedIds ->
-        Triple(query, filterType, selectedIds)
-    }.flatMapLatest { (query, filterType, selectedIds) ->
+        _selectedFilterType
+    ) { query, filterType ->
+        query to filterType
+    }.flatMapLatest { (query, filterType) ->
         val flow = when {
             query.isNotEmpty() -> getHistoryUseCase.search(query).catch { emit(emptyList()) }
             filterType != null -> getHistoryUseCase.getByType(filterType).catch { emit(emptyList()) }

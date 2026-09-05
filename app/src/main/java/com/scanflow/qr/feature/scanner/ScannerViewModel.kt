@@ -106,14 +106,12 @@ class ScannerViewModel @Inject constructor(
             lastBatchItem = newLastItem
         )
 
-        // Asynchronously delete from history repository if provider is available
-        deleteHistoryUseCase?.let { useCase ->
-            viewModelScope.launch {
-                try {
-                    useCase.deleteItem(scanId)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+        // Asynchronously delete from history repository
+        viewModelScope.launch {
+            try {
+                deleteHistoryUseCase.deleteItem(scanId)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

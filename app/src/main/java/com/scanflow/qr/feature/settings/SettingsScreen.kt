@@ -16,8 +16,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
@@ -27,8 +28,7 @@ import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -156,7 +156,7 @@ fun SettingsScreen(
                 title = { Text("Settings & Preferences", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -187,15 +187,15 @@ fun SettingsScreen(
                         checked = settings.vibrateOnScan,
                         onCheckedChange = { viewModel.toggleVibrate(it) }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     SettingToggleRow(
                         title = "Beep Sound",
                         subtitle = "Audio cue when code is detected",
-                        icon = Icons.Default.VolumeUp,
+                        icon = Icons.AutoMirrored.Filled.VolumeUp,
                         checked = settings.beepOnScan,
                         onCheckedChange = { viewModel.toggleBeep(it) }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     SettingToggleRow(
                         title = "Auto-Copy Scanned Text",
                         subtitle = "Automatically copy payload to clipboard",
@@ -203,7 +203,7 @@ fun SettingsScreen(
                         checked = settings.autoCopyToClipboard,
                         onCheckedChange = { viewModel.toggleAutoCopy(it) }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     SettingToggleRow(
                         title = "Auto-Open Safe URLs",
                         subtitle = "Automatically open safe HTTPS links",
@@ -238,7 +238,7 @@ fun SettingsScreen(
                             viewModel.setTheme(nextMode)
                         }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     SettingToggleRow(
                         title = "Warna Dinamis (Material You)",
                         subtitle = "Sesuaikan warna aksen dengan wallpaper perangkat (Android 12+)",
@@ -264,7 +264,7 @@ fun SettingsScreen(
                             viewModel.exportBackup(context, app)
                         }
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     SettingNavRow(
                         title = "Restore from Backup File",
                         subtitle = "Import JSON backup file to restore records",
@@ -289,14 +289,14 @@ fun SettingsScreen(
                         icon = Icons.Default.Security,
                         onClick = onNavigateToSecurity
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     SettingNavRow(
                         title = "Scan & Creation Analytics",
                         subtitle = "View local usage statistics & trends",
                         icon = Icons.Default.Analytics,
                         onClick = onNavigateToAnalytics
                     )
-                    Divider(color = MaterialTheme.colorScheme.outline)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     SettingNavRow(
                         title = "About ScanFlow QR",
                         subtitle = "Version 1.0.0 · Production Ready",

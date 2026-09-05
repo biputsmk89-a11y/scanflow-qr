@@ -225,6 +225,7 @@ fun HistoryItemCard(
     ScanFlowCard(
         modifier = modifier.fillMaxWidth(),
         onClick = onClick,
+        onLongClick = onLongClick,
         backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
         else MaterialTheme.colorScheme.surface
     ) {
