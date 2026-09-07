@@ -67,7 +67,7 @@ import com.scanflow.qr.core.designsystem.ScanFlowCard
 import com.scanflow.qr.core.designsystem.ScanFlowPrimaryButton
 import com.scanflow.qr.core.designsystem.ScanFlowSecondaryButton
 import com.scanflow.qr.core.designsystem.SuccessGreen
-import com.scanflow.qr.core.di.AppViewModelProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun AuthScreen(
@@ -75,7 +75,7 @@ fun AuthScreen(
     onLoginSuccess: (String) -> Unit = { onContinueAsGuest() },
     onLearnPrivacy: () -> Unit = onContinueAsGuest,
     onNavigateBack: (() -> Unit)? = null,
-    viewModel: AuthViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current

@@ -46,24 +46,25 @@ fun ScanFlowNavGraph(
     navController: NavHostController,
     isOnboardingCompleted: Boolean,
     onCompleteOnboarding: () -> Unit,
-    homeViewModel: HomeViewModel = hiltViewModel(),
-    scannerViewModel: ScannerViewModel = hiltViewModel(),
-    scanResultViewModel: ScanResultViewModel = hiltViewModel(),
-    createQrViewModel: CreateQrViewModel = hiltViewModel(),
-    qrPreviewViewModel: QrPreviewViewModel = hiltViewModel(),
-    historyViewModel: HistoryViewModel = hiltViewModel(),
-    favoritesViewModel: FavoritesViewModel = hiltViewModel(),
-    myQrViewModel: MyQrViewModel = hiltViewModel(),
-    settingsViewModel: SettingsViewModel = hiltViewModel(),
-    securityViewModel: SecurityViewModel = hiltViewModel(),
-    analyticsViewModel: AnalyticsViewModel = hiltViewModel(),
-    dataExportViewModel: DataExportViewModel = hiltViewModel(),
+    homeViewModel: HomeViewModel? = null,
+    scannerViewModel: ScannerViewModel? = null,
+    scanResultViewModel: ScanResultViewModel? = null,
+    createQrViewModel: CreateQrViewModel? = null,
+    qrPreviewViewModel: QrPreviewViewModel? = null,
+    historyViewModel: HistoryViewModel? = null,
+    favoritesViewModel: FavoritesViewModel? = null,
+    myQrViewModel: MyQrViewModel? = null,
+    settingsViewModel: SettingsViewModel? = null,
+    securityViewModel: SecurityViewModel? = null,
+    analyticsViewModel: AnalyticsViewModel? = null,
+    dataExportViewModel: DataExportViewModel? = null,
     sharedImageUri: android.net.Uri? = null,
     onSharedUriHandled: () -> Unit = {},
     shortcutRoute: String? = null,
     onShortcutRouteHandled: () -> Unit = {}
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val fallbackScannerViewModel = scannerViewModel ?: hiltViewModel()
 
     LaunchedEffect(shortcutRoute) {
         val route = shortcutRoute ?: return@LaunchedEffect
@@ -77,7 +78,7 @@ fun ScanFlowNavGraph(
 
     LaunchedEffect(sharedImageUri) {
         val uri = sharedImageUri ?: return@LaunchedEffect
-        scannerViewModel.scanImageFromGallery(
+        fallbackScannerViewModel.scanImageFromGallery(
             context = context,
             imageUri = uri,
             onNavigateResult = { scanId ->
@@ -152,10 +153,10 @@ fun ScanFlowNavGraph(
 
         composable(Screen.Main.route) {
             MainScreen(
-                homeViewModel = homeViewModel,
-                historyViewModel = historyViewModel,
-                createQrViewModel = createQrViewModel,
-                analyticsViewModel = analyticsViewModel,
+                homeViewModel = homeViewModel ?: hiltViewModel(),
+                historyViewModel = historyViewModel ?: hiltViewModel(),
+                createQrViewModel = createQrViewModel ?: hiltViewModel(),
+                analyticsViewModel = analyticsViewModel ?: hiltViewModel(),
                 onNavigateToScan = { navController.navigate(Screen.Scanner.route) },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
                 onNavigateToMyQr = { navController.navigate(Screen.MyQr.route) },
@@ -171,8 +172,9 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.Scanner.route) {
+            val vm: ScannerViewModel = scannerViewModel ?: hiltViewModel()
             ScannerScreen(
-                viewModel = scannerViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateResult = { scanId ->
                     navController.navigate(Screen.ScanResult.createRoute(scanId)) {
@@ -187,16 +189,18 @@ fun ScanFlowNavGraph(
             arguments = listOf(navArgument("scanId") { type = NavType.LongType })
         ) { backStackEntry ->
             val scanId = backStackEntry.arguments?.getLong("scanId") ?: 0L
+            val vm: ScanResultViewModel = scanResultViewModel ?: hiltViewModel(backStackEntry)
             ScanResultScreen(
                 scanId = scanId,
-                viewModel = scanResultViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.CreateQr.route) {
+            val vm: CreateQrViewModel = createQrViewModel ?: hiltViewModel()
             CreateQrScreen(
-                viewModel = createQrViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
@@ -208,16 +212,18 @@ fun ScanFlowNavGraph(
             arguments = listOf(navArgument("qrId") { type = NavType.LongType })
         ) { backStackEntry ->
             val qrId = backStackEntry.arguments?.getLong("qrId") ?: 0L
+            val vm: QrPreviewViewModel = qrPreviewViewModel ?: hiltViewModel(backStackEntry)
             QrPreviewScreen(
                 qrId = qrId,
-                viewModel = qrPreviewViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.Favorites.route) {
+            val vm: FavoritesViewModel = favoritesViewModel ?: hiltViewModel()
             FavoritesScreen(
-                viewModel = favoritesViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToResult = { id -> navController.navigate(Screen.ScanResult.createRoute(id)) },
                 onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) }
@@ -225,8 +231,9 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.MyQr.route) {
+            val vm: MyQrViewModel = myQrViewModel ?: hiltViewModel()
             MyQrScreen(
-                viewModel = myQrViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToCreate = { navController.navigate(Screen.CreateQr.route) },
                 onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) }
@@ -234,8 +241,9 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.History.route) {
+            val vm: HistoryViewModel = historyViewModel ?: hiltViewModel()
             HistoryScreen(
-                viewModel = historyViewModel,
+                viewModel = vm,
                 onNavigateToResult = { id: Long -> navController.navigate(Screen.ScanResult.createRoute(id)) },
                 onNavigateBack = { navController.popBackStack() },
                 onScanClick = { navController.navigate(Screen.Scanner.route) }
@@ -243,8 +251,9 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.Settings.route) {
+            val vm: SettingsViewModel = settingsViewModel ?: hiltViewModel()
             SettingsScreen(
-                viewModel = settingsViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToSecurity = { navController.navigate(Screen.Security.route) },
                 onNavigateToAnalytics = { navController.navigate(Screen.Analytics.route) },
@@ -254,15 +263,17 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.DataExport.route) {
+            val vm: DataExportViewModel = dataExportViewModel ?: hiltViewModel()
             DataExportScreen(
-                viewModel = dataExportViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.Security.route) {
+            val vm: SecurityViewModel = securityViewModel ?: hiltViewModel()
             SecurityScreen(
-                viewModel = securityViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToAppLock = { navController.navigate(Screen.AppLock.route) },
                 onNavigateToPinEntry = { navController.navigate(Screen.PinEntry.route) }
@@ -270,7 +281,8 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.AppLock.route) {
-            val settings by settingsViewModel.settings.collectAsState()
+            val vm: SettingsViewModel = settingsViewModel ?: hiltViewModel()
+            val settings by vm.settings.collectAsState()
             AppLockScreen(
                 settings = settings,
                 onUnlockSuccess = { navController.popBackStack() },
@@ -281,7 +293,8 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.PinEntry.route) {
-            val settings by settingsViewModel.settings.collectAsState()
+            val vm: SettingsViewModel = settingsViewModel ?: hiltViewModel()
+            val settings by vm.settings.collectAsState()
             PinEntryScreen(
                 settings = settings,
                 onPinSuccess = { navController.popBackStack() },
@@ -290,8 +303,9 @@ fun ScanFlowNavGraph(
         }
 
         composable(Screen.Analytics.route) {
+            val vm: AnalyticsViewModel = analyticsViewModel ?: hiltViewModel()
             AnalyticsScreen(
-                viewModel = analyticsViewModel,
+                viewModel = vm,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

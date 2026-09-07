@@ -83,7 +83,14 @@ fun AppLockScreen(
     isTestingMode: Boolean = false
 ) {
     val context = LocalContext.current
-    val activity = context as? FragmentActivity
+    val activity = remember(context) {
+        var curr: android.content.Context? = context
+        while (curr is android.content.ContextWrapper) {
+            if (curr is FragmentActivity) return@remember curr
+            curr = curr.baseContext
+        }
+        null
+    }
     val scope = rememberCoroutineScope()
 
     var isPinEntryMode by remember { mutableStateOf(false) }

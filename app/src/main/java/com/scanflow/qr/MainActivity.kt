@@ -121,20 +121,15 @@ class MainActivity : FragmentActivity() {
 
             val isUnlocked = isUnlockedState ?: !(settings.isAppLockEnabled || settings.isBiometricEnabled)
 
-            val currentContext = LocalContext.current
             val targetLocale = remember(settings.language) { java.util.Locale(settings.language) }
             val localizedConfiguration = remember(targetLocale) {
                 android.content.res.Configuration(resources.configuration).apply {
                     setLocale(targetLocale)
                 }
             }
-            val localizedContext = remember(localizedConfiguration) {
-                currentContext.createConfigurationContext(localizedConfiguration)
-            }
 
             CompositionLocalProvider(
-                LocalConfiguration provides localizedConfiguration,
-                LocalContext provides localizedContext
+                LocalConfiguration provides localizedConfiguration
             ) {
                 ScanFlowQRTheme(
                     darkTheme = isDarkTheme,

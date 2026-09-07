@@ -101,7 +101,7 @@ import com.scanflow.qr.core.designsystem.Dimens
 import com.scanflow.qr.core.designsystem.ElectricBlue
 import com.scanflow.qr.core.designsystem.ElectricBlueLight
 import com.scanflow.qr.core.designsystem.SuccessGreen
-import com.scanflow.qr.core.di.AppViewModelProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.scanflow.qr.domain.model.AppThemeMode
 
 /**
@@ -118,7 +118,7 @@ fun ProfileScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToAuth: () -> Unit = {},
     onNavigateToDataExport: () -> Unit = {},
-    viewModel: ProfileViewModel = viewModel(factory = AppViewModelProvider.Factory)
+    viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
