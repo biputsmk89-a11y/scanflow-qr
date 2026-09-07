@@ -26,11 +26,17 @@
 
     <!-- Network state for safe connectivity check & WiFi handling -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="32" />
 
     <!-- Biometrics for App Lock -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!-- Contacts for Contact Import in QR Generator -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <!-- Package Visibility for Android 11+ (API 30+) Intent Resolution -->
     <queries>
@@ -85,7 +91,30 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Receive Shared Images from WhatsApp, Gallery, Telegram etc. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+
+            <!-- App Shortcuts on Launcher Long-Press -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- Quick Settings Status Bar Notification Tile -->
+        <service
+            android:name=".core.tile.ScanTileService"
+            android:label="@string/tile_scan_qr"
+            android:icon="@drawable/ic_qs_scan_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <!-- FileProvider for Sharing QR Images -->
         <provider

@@ -38,6 +38,20 @@ class QrGeneratorRepositoryImpl(
         return database.qrCodeDao().insertQr(userQrCode.toEntity())
     }
 
+    override suspend fun updateUserQr(userQrCode: UserQrCode) {
+        database.qrCodeDao().updateQr(userQrCode.toEntity())
+    }
+
+    override suspend fun updateUserQrStyle(id: Long, config: QrStyleConfig) {
+        database.qrCodeDao().updateQrStyle(
+            id = id,
+            fg = config.foregroundColor,
+            bg = config.backgroundColor,
+            pattern = config.patternStyle.name,
+            eye = config.cornerEyeStyle.name
+        )
+    }
+
     override fun getAllUserQrs(): Flow<List<UserQrCode>> {
         return database.qrCodeDao().getAllUserQrs().map { list -> list.map { it.toDomain() } }
     }
@@ -80,6 +94,38 @@ class QrGeneratorRepositoryImpl(
 
     override fun generateQrSvg(content: String, config: QrStyleConfig): String? {
         return QrCodeGenerator.generateQrSvg(content, config)
+    }
+
+    override fun generateBarcodeBitmap(
+        content: String,
+        formatName: String,
+        width: Int,
+        height: Int,
+        foregroundColor: Int,
+        backgroundColor: Int
+    ): Bitmap? {
+        return QrCodeGenerator.generateBarcodeBitmap(
+            content = content,
+            formatName = formatName,
+            width = width,
+            height = height,
+            foregroundColor = foregroundColor,
+            backgroundColor = backgroundColor
+        )
+    }
+
+    override fun generateBarcodeSvg(
+        content: String,
+        formatName: String,
+        foregroundColor: Int,
+        backgroundColor: Int
+    ): String? {
+        return QrCodeGenerator.generateBarcodeSvg(
+            content = content,
+            formatName = formatName,
+            foregroundColor = foregroundColor,
+            backgroundColor = backgroundColor
+        )
     }
 
     override suspend fun exportQrSvg(svgContent: String, title: String): Uri? {
@@ -147,6 +193,10 @@ class SettingsRepositoryImpl(
         preferencesManager.updateBiometric(enabled)
     }
 
+    override suspend fun updateLockTimeout(seconds: Long) {
+        preferencesManager.updateLockTimeout(seconds)
+    }
+
     override suspend fun updatePinCode(pin: String?) {
         preferencesManager.updatePinCode(pin)
     }
@@ -157,6 +207,34 @@ class SettingsRepositoryImpl(
 
     override suspend fun updateDynamicColor(enabled: Boolean) {
         preferencesManager.updateDynamicColor(enabled)
+    }
+
+    override suspend fun updateAutoScan(enabled: Boolean) {
+        preferencesManager.updateAutoScan(enabled)
+    }
+
+    override suspend fun updateLanguage(lang: String) {
+        preferencesManager.updateLanguage(lang)
+    }
+
+    override suspend fun updateSaveScanHistory(enabled: Boolean) {
+        preferencesManager.updateSaveScanHistory(enabled)
+    }
+
+    override suspend fun updateSendAnonymousAnalytics(enabled: Boolean) {
+        preferencesManager.updateSendAnonymousAnalytics(enabled)
+    }
+
+    override suspend fun updateSafeUrlDetection(enabled: Boolean) {
+        preferencesManager.updateSafeUrlDetection(enabled)
+    }
+
+    override suspend fun updateSuspiciousQrWarning(enabled: Boolean) {
+        preferencesManager.updateSuspiciousQrWarning(enabled)
+    }
+
+    override suspend fun updateClipboardProtection(enabled: Boolean) {
+        preferencesManager.updateClipboardProtection(enabled)
     }
 }
 
@@ -181,6 +259,10 @@ class LocalGuestAuthRepository : AuthRepository {
     override suspend fun signInAsGuest(): AuthUser = guestUser
 
     override suspend fun signOut() {}
+
+    override suspend fun updateProfile(name: String, email: String): Result<AuthUser> {
+        return Result.success(guestUser.copy(displayName = name, email = email, isGuest = false))
+    }
 }
 
 class LocalSyncRepository : SyncRepository {

@@ -32,6 +32,8 @@ import com.scanflow.qr.core.designsystem.CyanAccent
 import com.scanflow.qr.core.designsystem.DarkSurface
 import com.scanflow.qr.core.designsystem.ElectricBlue
 import com.scanflow.qr.core.navigation.BottomNavItem
+import com.scanflow.qr.feature.analytics.AnalyticsScreen
+import com.scanflow.qr.feature.analytics.AnalyticsViewModel
 import com.scanflow.qr.feature.generator.CreateQrScreen
 import com.scanflow.qr.feature.generator.CreateQrViewModel
 import com.scanflow.qr.feature.history.HistoryScreen
@@ -45,15 +47,18 @@ fun MainScreen(
     homeViewModel: HomeViewModel,
     historyViewModel: HistoryViewModel,
     createQrViewModel: CreateQrViewModel,
+    analyticsViewModel: AnalyticsViewModel,
     onNavigateToScan: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToMyQr: () -> Unit,
+    onNavigateToHistory: () -> Unit = {},
     onNavigateToResult: (Long) -> Unit,
     onNavigateToPreview: (Long) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToSecurity: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    onNavigateToAuth: () -> Unit = {}
+    onNavigateToAuth: () -> Unit = {},
+    onNavigateToDataExport: () -> Unit = {}
 ) {
     var currentTab by rememberSaveable { mutableStateOf(BottomNavItem.Home.route) }
 
@@ -129,10 +134,15 @@ fun MainScreen(
                         viewModel = homeViewModel,
                         onNavigateToScan = onNavigateToScan,
                         onNavigateToCreate = { currentTab = BottomNavItem.Create.route },
-                        onNavigateToHistory = { currentTab = BottomNavItem.History.route },
+                        onNavigateToHistory = onNavigateToHistory,
                         onNavigateToFavorites = onNavigateToFavorites,
                         onNavigateToMyQr = onNavigateToMyQr,
-                        onNavigateToResult = onNavigateToResult
+                        onNavigateToResult = onNavigateToResult,
+                        onNavigateToProfile = { currentTab = BottomNavItem.Profile.route },
+                        onNavigateToCreateBarcode = {
+                            createQrViewModel.selectType(com.scanflow.qr.domain.model.QrType.BARCODE)
+                            currentTab = BottomNavItem.Create.route
+                        }
                     )
                 }
                 BottomNavItem.Create.route -> {
@@ -140,6 +150,12 @@ fun MainScreen(
                         viewModel = createQrViewModel,
                         onNavigateBack = { currentTab = BottomNavItem.Home.route },
                         onNavigateToPreview = onNavigateToPreview
+                    )
+                }
+                BottomNavItem.Analytics.route -> {
+                    AnalyticsScreen(
+                        viewModel = analyticsViewModel,
+                        onNavigateBack = { currentTab = BottomNavItem.Home.route }
                     )
                 }
                 BottomNavItem.History.route -> {
@@ -155,7 +171,8 @@ fun MainScreen(
                         onNavigateToSettings = onNavigateToSettings,
                         onNavigateToSecurity = onNavigateToSecurity,
                         onNavigateToAbout = onNavigateToAbout,
-                        onNavigateToAuth = onNavigateToAuth
+                        onNavigateToAuth = onNavigateToAuth,
+                        onNavigateToDataExport = onNavigateToDataExport
                     )
                 }
             }

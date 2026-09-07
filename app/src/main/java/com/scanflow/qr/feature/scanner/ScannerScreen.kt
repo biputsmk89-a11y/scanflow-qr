@@ -11,17 +11,32 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import com.scanflow.qr.core.utils.VibratorHelper
+import kotlinx.coroutines.delay
+import java.util.concurrent.TimeUnit
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,20 +80,25 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -155,62 +175,164 @@ fun ScannerScreen(
     }
 
     var cameraControl: Camera? by remember { mutableStateOf(null) }
+    var cameraProviderInstance by remember { mutableStateOf<ProcessCameraProvider?>(null) }
+    var previewViewInstance by remember { mutableStateOf<PreviewView?>(null) }
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    // Tap-to-Focus State
+    var focusPoint by remember { mutableStateOf<Offset?>(null) }
+    var focusSuccessful by remember { mutableStateOf<Boolean?>(null) }
+    var focusTrigger by remember { mutableStateOf(0) }
+
+    // Auto-dismiss focus reticle after 2 seconds
+    LaunchedEffect(focusTrigger) {
+        if (focusPoint != null) {
+            delay(2000)
+            focusPoint = null
+            focusSuccessful = null
+        }
+    }
+
+    val onFocusTap: (Offset) -> Unit = { offset ->
+        focusPoint = offset
+        focusSuccessful = null
+        focusTrigger++
+
+        val control = cameraControl?.cameraControl
+        val preview = previewViewInstance
+        if (control != null && preview != null) {
+            try {
+                val point = preview.meteringPointFactory.createPoint(offset.x, offset.y)
+                val action = FocusMeteringAction.Builder(
+                    point,
+                    FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE
+                )
+                    .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                    .build()
+
+                val future = control.startFocusAndMetering(action)
+                future.addListener({
+                    try {
+                        val result = future.get()
+                        focusSuccessful = result.isFocusSuccessful
+                        if (result.isFocusSuccessful) {
+                            VibratorHelper.vibrateSuccess(context)
+                        }
+                    } catch (_: Exception) {
+                        focusSuccessful = false
+                    }
+                }, ContextCompat.getMainExecutor(context))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // Lifecycle cleanup: turn off torch, unbind camera provider, and shut down executor thread
+    DisposableEffect(cameraExecutor) {
+        onDispose {
+            try {
+                cameraControl?.cameraControl?.enableTorch(false)
+            } catch (_: Exception) {}
+            try {
+                cameraProviderInstance?.unbindAll()
+            } catch (_: Exception) {}
+            cameraExecutor.shutdown()
+        }
+    }
 
     // Update Torch
     LaunchedEffect(uiState.isTorchEnabled) {
         cameraControl?.cameraControl?.enableTorch(uiState.isTorchEnabled)
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        // CameraX Viewfinder
-        AndroidView(
-            factory = { ctx ->
-                val previewView = PreviewView(ctx)
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                val cameraExecutor = Executors.newSingleThreadExecutor()
+    // Update Zoom Ratio
+    LaunchedEffect(uiState.zoomRatio) {
+        cameraControl?.cameraControl?.setZoomRatio(uiState.zoomRatio)
+    }
 
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-                    val preview = Preview.Builder().build().also {
-                        it.setSurfaceProvider(previewView.surfaceProvider)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    onFocusTap(offset)
+                }
+            }
+            .pointerInput(Unit) {
+                detectTransformGestures { _, _, zoom, _ ->
+                    if (zoom != 1.0f) {
+                        viewModel.applyZoomDelta(zoom)
                     }
+                }
+            }
+    ) {
+        // CameraX Viewfinder with key on cameraLens to re-bind when flipping camera
+        key(uiState.cameraLens) {
+            AndroidView(
+                factory = { ctx ->
+                    val previewView = PreviewView(ctx)
+                    previewViewInstance = previewView
+                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
-                    val imageAnalysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also { analysis ->
-                            analysis.setAnalyzer(
-                                cameraExecutor,
-                                CameraAnalyzer { raw, format ->
-                                    viewModel.onBarcodeDetected(context, raw, format, onNavigateResult)
+                    cameraProviderFuture.addListener({
+                        try {
+                            val cameraProvider = cameraProviderFuture.get()
+                            cameraProviderInstance = cameraProvider
+                            val preview = Preview.Builder().build().also {
+                                it.setSurfaceProvider(previewView.surfaceProvider)
+                            }
+
+                            val imageAnalysis = ImageAnalysis.Builder()
+                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                .build()
+                                .also { analysis ->
+                                    if (!cameraExecutor.isShutdown) {
+                                        analysis.setAnalyzer(
+                                            cameraExecutor,
+                                            CameraAnalyzer { raw, format ->
+                                                viewModel.onBarcodeDetected(context, raw, format, onNavigateResult)
+                                            }
+                                        )
+                                    }
                                 }
+
+                            val cameraSelector = CameraSelector.Builder()
+                                .requireLensFacing(uiState.cameraLens)
+                                .build()
+
+                            cameraProvider.unbindAll()
+                            val camera = cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                cameraSelector,
+                                preview,
+                                imageAnalysis
                             )
+                            camera.cameraInfo.zoomState.observe(lifecycleOwner) { state ->
+                                if (state != null) {
+                                    viewModel.setZoomBounds(state.minZoomRatio, state.maxZoomRatio)
+                                }
+                            }
+                            cameraControl = camera
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
+                    }, ContextCompat.getMainExecutor(ctx))
 
-                    val cameraSelector = CameraSelector.Builder()
-                        .requireLensFacing(uiState.cameraLens)
-                        .build()
-
-                    try {
-                        cameraProvider.unbindAll()
-                        cameraControl = cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            cameraSelector,
-                            preview,
-                            imageAnalysis
-                        )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }, ContextCompat.getMainExecutor(ctx))
-
-                previewView
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+                    previewView
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         // Overlay Frame
         ScannerOverlayView()
+
+        // Animated Tap-to-Focus Reticle
+        focusPoint?.let { point ->
+            FocusReticleView(offset = point, isSuccess = focusSuccessful)
+        }
 
         // Top Navigation & Action Controls
         Column(
@@ -343,6 +465,67 @@ fun ScannerScreen(
                 .padding(bottom = Dimens.Spacing24, start = Dimens.Spacing16, end = Dimens.Spacing16),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Zoom Slider & Quick Zoom Buttons (1x, 2x, 5x)
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.Black.copy(alpha = 0.65f),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
+                modifier = Modifier
+                    .padding(bottom = 12.dp)
+                    .fillMaxWidth(0.9f)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(1.0f, 2.0f, 5.0f).forEach { preset ->
+                                val isSelected = kotlin.math.abs(uiState.zoomRatio - preset) < 0.15f
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) ElectricBlue else Color.White.copy(alpha = 0.12f),
+                                    modifier = Modifier.clickable { viewModel.setZoomRatio(preset) }
+                                ) {
+                                    Text(
+                                        text = "${preset.toInt()}x",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                                        color = if (isSelected) Color.Black else Color.White,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        Text(
+                            text = String.format(Locale.US, "%.1fx Zoom", uiState.zoomRatio),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = ElectricBlue
+                        )
+                    }
+
+                    Slider(
+                        value = uiState.zoomRatio,
+                        onValueChange = { viewModel.setZoomRatio(it) },
+                        valueRange = uiState.minZoomRatio..uiState.maxZoomRatio,
+                        colors = SliderDefaults.colors(
+                            thumbColor = ElectricBlue,
+                            activeTrackColor = ElectricBlue,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.25f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(28.dp)
+                    )
+                }
+            }
+
             if (uiState.isBatchMode) {
                 // Batch Mode Control Deck
                 Surface(
@@ -390,7 +573,8 @@ fun ScannerScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing12)
+                            horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Review Batch Button
                             FilledTonalButton(
@@ -403,13 +587,31 @@ fun ScannerScreen(
                                 )
                             ) {
                                 Text(
-                                    text = "Daftar Hasil (${uiState.batchCount})",
+                                    text = "Daftar (${uiState.batchCount})",
                                     fontWeight = FontWeight.Bold
                                 )
                             }
 
-                            // Clear Batch
+                            // Instant Batch CSV Share Button
                             if (uiState.batchCount > 0) {
+                                FilledTonalButton(
+                                    onClick = { viewModel.shareBatchCsv(context) },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = Color(0xFF00E5FF).copy(alpha = 0.2f),
+                                        contentColor = Color(0xFF00E5FF)
+                                    )
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Share,
+                                        contentDescription = "Bagikan CSV",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(text = "CSV", fontWeight = FontWeight.Bold)
+                                }
+
+                                // Clear Batch
                                 OutlinedButton(
                                     onClick = { viewModel.clearBatch() },
                                     shape = RoundedCornerShape(12.dp),
@@ -627,15 +829,30 @@ fun ScannerScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8)
                 ) {
-                    // Copy CSV Button
+                    // Direct CSV Share File Button
                     FilledTonalButton(
+                        onClick = { viewModel.shareBatchCsv(context) },
+                        modifier = Modifier.weight(1.2f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Bagikan CSV", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                    }
+
+                    // Copy Summary Button
+                    OutlinedButton(
                         onClick = {
                             if (uiState.batchItems.isNotEmpty()) {
-                                val csv = viewModel.getBatchCsvExportText()
+                                val summary = viewModel.getBatchPlainTextSummary()
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("ScanFlow Batch CSV", csv)
+                                val clip = ClipData.newPlainText("ScanFlow Batch Summary", summary)
                                 clipboard.setPrimaryClip(clip)
-                                Toast.makeText(context, "✅ CSV berhasil disalin ke papan klip!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "✅ Ringkasan teks disalin!", Toast.LENGTH_SHORT).show()
                             } else {
                                 Toast.makeText(context, "Belum ada item untuk disalin", Toast.LENGTH_SHORT).show()
                             }
@@ -645,31 +862,7 @@ fun ScannerScreen(
                     ) {
                         Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Salin CSV", style = MaterialTheme.typography.labelMedium)
-                    }
-
-                    // Share Button
-                    FilledTonalButton(
-                        onClick = {
-                            if (uiState.batchItems.isNotEmpty()) {
-                                val summary = viewModel.getBatchPlainTextSummary()
-                                val sendIntent = Intent().apply {
-                                    action = Intent.ACTION_SEND
-                                    putExtra(Intent.EXTRA_TEXT, summary)
-                                    type = "text/plain"
-                                }
-                                val shareIntent = Intent.createChooser(sendIntent, "Bagikan Laporan Batch")
-                                context.startActivity(shareIntent)
-                            } else {
-                                Toast.makeText(context, "Belum ada item untuk dibagikan", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = "Bagikan", style = MaterialTheme.typography.labelMedium)
+                        Text(text = "Salin Teks", style = MaterialTheme.typography.labelMedium)
                     }
                 }
 
@@ -813,3 +1006,144 @@ fun ScannerScreen(
         }
     }
 }
+
+/**
+ * Animated DSLR-style Focus Reticle shown at the touch coordinates
+ * when the user taps on the camera viewfinder to focus.
+ */
+@Composable
+private fun FocusReticleView(
+    offset: Offset,
+    isSuccess: Boolean?
+) {
+    var isScaledDown by remember { mutableStateOf(false) }
+
+    LaunchedEffect(offset) {
+        isScaledDown = false
+        delay(16)
+        isScaledDown = true
+    }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isScaledDown) 1.0f else 1.45f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "focus_scale"
+    )
+
+    val reticleColor = when (isSuccess) {
+        true -> Color(0xFF00E676) // Crisp emerald green on focus lock
+        false -> Color(0xFFFF5252) // Soft coral red on focus fail
+        null -> ElectricBlue // Vibrant cyan-blue while focusing
+    }
+
+    val reticleSize = 72.dp
+    val density = LocalDensity.current
+    val reticleSizePx = with(density) { reticleSize.toPx() }
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Canvas(
+            modifier = Modifier
+                .size(reticleSize)
+                .graphicsLayer {
+                    translationX = offset.x - (reticleSizePx / 2f)
+                    translationY = offset.y - (reticleSizePx / 2f)
+                    scaleX = scale
+                    scaleY = scale
+                }
+        ) {
+            val strokeWidth = 2.dp.toPx()
+            val bracketLength = size.width * 0.28f
+            val radius = size.width / 2f
+            val center = Offset(radius, radius)
+
+            // 1. Subtle Outer Circle
+            drawCircle(
+                color = reticleColor.copy(alpha = 0.35f),
+                radius = radius,
+                style = Stroke(width = 1.dp.toPx())
+            )
+
+            // 2. Center Crosshair Dot
+            drawCircle(
+                color = reticleColor,
+                radius = 3.dp.toPx()
+            )
+
+            // 3. DSLR Viewfinder Corner Brackets (Top-Left, Top-Right, Bottom-Left, Bottom-Right)
+            val cornerInset = 4.dp.toPx()
+
+            // Top-Left Corner
+            drawLine(
+                color = reticleColor,
+                start = Offset(cornerInset, cornerInset + bracketLength),
+                end = Offset(cornerInset, cornerInset),
+                strokeWidth = strokeWidth
+            )
+            drawLine(
+                color = reticleColor,
+                start = Offset(cornerInset, cornerInset),
+                end = Offset(cornerInset + bracketLength, cornerInset),
+                strokeWidth = strokeWidth
+            )
+
+            // Top-Right Corner
+            drawLine(
+                color = reticleColor,
+                start = Offset(size.width - cornerInset - bracketLength, cornerInset),
+                end = Offset(size.width - cornerInset, cornerInset),
+                strokeWidth = strokeWidth
+            )
+            drawLine(
+                color = reticleColor,
+                start = Offset(size.width - cornerInset, cornerInset),
+                end = Offset(size.width - cornerInset, cornerInset + bracketLength),
+                strokeWidth = strokeWidth
+            )
+
+            // Bottom-Left Corner
+            drawLine(
+                color = reticleColor,
+                start = Offset(cornerInset, size.height - cornerInset - bracketLength),
+                end = Offset(cornerInset, size.height - cornerInset),
+                strokeWidth = strokeWidth
+            )
+            drawLine(
+                color = reticleColor,
+                start = Offset(cornerInset, size.height - cornerInset),
+                end = Offset(cornerInset + bracketLength, size.height - cornerInset),
+                strokeWidth = strokeWidth
+            )
+
+            // Bottom-Right Corner
+            drawLine(
+                color = reticleColor,
+                start = Offset(size.width - cornerInset - bracketLength, size.height - cornerInset),
+                end = Offset(size.width - cornerInset, size.height - cornerInset),
+                strokeWidth = strokeWidth
+            )
+            drawLine(
+                color = reticleColor,
+                start = Offset(size.width - cornerInset, size.height - cornerInset - bracketLength),
+                end = Offset(size.width - cornerInset, size.height - cornerInset),
+                strokeWidth = strokeWidth
+            )
+
+            // 4. Directional Tick Marks (North, South, East, West)
+            val tickLen = 6.dp.toPx()
+            // North
+            drawLine(reticleColor, Offset(center.x, 0f), Offset(center.x, tickLen), strokeWidth)
+            // South
+            drawLine(reticleColor, Offset(center.x, size.height - tickLen), Offset(center.x, size.height), strokeWidth)
+            // West
+            drawLine(reticleColor, Offset(0f, center.y), Offset(tickLen, center.y), strokeWidth)
+            // East
+            drawLine(reticleColor, Offset(size.width - tickLen, center.y), Offset(size.width, center.y), strokeWidth)
+        }
+    }
+}
+

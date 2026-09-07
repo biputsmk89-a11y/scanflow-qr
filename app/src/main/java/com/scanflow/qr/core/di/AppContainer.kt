@@ -29,6 +29,7 @@ import com.scanflow.qr.domain.usecase.UpdateSettingsUseCase
 interface AppContainer {
     val database: ScanFlowDatabase
     val preferencesManager: PreferencesManager
+    val appLockManager: com.scanflow.qr.core.security.AppLockManager
 
     // Repositories
     val scanRepository: ScanRepository

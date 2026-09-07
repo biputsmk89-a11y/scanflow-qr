@@ -54,13 +54,70 @@ object VibratorHelper {
 }
 
 object SoundHelper {
+    private val lock = Any()
 
+    @Volatile
+    private var toneGenerator: ToneGenerator? = null
+
+    @Volatile
+    var isEnabled: Boolean = true
+
+    /**
+     * Memutar nada bip pemindaian menggunakan ToneGenerator singleton terkelola.
+     * Mencegah kebocoran AudioTrack native dan memory leak dengan mereuse instance yang sama.
+     */
     fun playBeep() {
-        try {
-            val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-            toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
+        if (!isEnabled) return
+        synchronized(lock) {
+            try {
+                var generator = toneGenerator
+                if (generator == null) {
+                    generator = createToneGenerator()
+                    toneGenerator = generator
+                }
+                generator?.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
+            } catch (e: Exception) {
+                // Self-healing jika native audio server mereset atau track invalid
+                try {
+                    toneGenerator?.release()
+                } catch (_: Exception) {}
+                try {
+                    val fallbackGen = createToneGenerator()
+                    toneGenerator = fallbackGen
+                    fallbackGen?.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
+                } catch (retryEx: Exception) {
+                    retryEx.printStackTrace()
+                    toneGenerator = null
+                }
+            }
+        }
+    }
+
+    /**
+     * Melepaskan resource ToneGenerator secara tuntas saat aplikasi di latar belakang
+     * atau saat memori rendah.
+     */
+    fun release() {
+        synchronized(lock) {
+            try {
+                toneGenerator?.release()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                toneGenerator = null
+            }
+        }
+    }
+
+    fun hasActiveInstance(): Boolean = toneGenerator != null
+
+    private fun createToneGenerator(): ToneGenerator? {
+        return try {
+            ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
         } catch (e: Exception) {
             e.printStackTrace()
+            null
         }
     }
 }
+

@@ -64,4 +64,73 @@ class AnalyticsSummaryUseCaseTest {
         assertThat(summary.scansByType[QrType.WIFI]).isEqualTo(3)
         assertThat(summary.scansByType[QrType.WEBSITE]).isEqualTo(1)
     }
+
+    @Test
+    fun `invoke with time range filters items by timestamp dynamically`() = runTest {
+        val now = System.currentTimeMillis()
+        val oneDayAgo = now - (1L * 24 * 60 * 60 * 1000)
+        val tenDaysAgo = now - (10L * 24 * 60 * 60 * 1000)
+        val fortyDaysAgo = now - (40L * 24 * 60 * 60 * 1000)
+
+        val historyItems = listOf(
+            ScanHistoryItem(id = 1, content = "http://recent.com", format = "QR", type = QrType.WEBSITE, title = "Recent", createdAt = oneDayAgo),
+            ScanHistoryItem(id = 2, content = "http://mid.com", format = "QR", type = QrType.WEBSITE, title = "Mid", createdAt = tenDaysAgo),
+            ScanHistoryItem(id = 3, content = "http://old.com", format = "QR", type = QrType.WEBSITE, title = "Old", createdAt = fortyDaysAgo)
+        )
+        historyRepository.emitItems(historyItems)
+
+        // 7 Hari Terakhir: only oneDayAgo item (id = 1)
+        val summary7Days = getAnalyticsSummaryUseCase(timeRange = "7 Hari Terakhir").first()
+        assertThat(summary7Days.totalScans).isEqualTo(1)
+
+        // 30 Hari Terakhir: oneDayAgo and tenDaysAgo (id = 1, 2)
+        val summary30Days = getAnalyticsSummaryUseCase(timeRange = "30 Hari Terakhir").first()
+        assertThat(summary30Days.totalScans).isEqualTo(2)
+
+        // Semua Waktu: all 3 items
+        val summaryAllTime = getAnalyticsSummaryUseCase(timeRange = "Semua Waktu").first()
+        assertThat(summaryAllTime.totalScans).isEqualTo(3)
+    }
+
+    @Test
+    fun `invoke with weekly interval returns 4 week buckets and dynamic busiest day`() = runTest {
+        val now = System.currentTimeMillis()
+        val historyItems = listOf(
+            ScanHistoryItem(id = 1, content = "http://test.com", format = "QR", type = QrType.WEBSITE, title = "Test", createdAt = now)
+        )
+        historyRepository.emitItems(historyItems)
+
+        val summaryWeekly = getAnalyticsSummaryUseCase(timeRange = "Semua Waktu", interval = "Mingguan").first()
+        assertThat(summaryWeekly.dailyActivities.map { it.dayName }).containsExactly("M1", "M2", "M3", "M4").inOrder()
+        assertThat(summaryWeekly.busiestDayText).contains("Minggu M4")
+    }
+
+    @Test
+    fun `invoke calculates hourly breakdown and top locations from real scans`() = runTest {
+        val cal = java.util.Calendar.getInstance()
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 9)
+        val nineAmTime = cal.timeInMillis
+
+        val historyItems = listOf(
+            ScanHistoryItem(id = 1, content = "http://example.com", format = "QR", type = QrType.WEBSITE, title = "Diskominfo Surabaya", createdAt = nineAmTime),
+            ScanHistoryItem(id = 2, content = "https://apps.apple.com/app/test", format = "QR", type = QrType.WEBSITE, title = "Apple App", createdAt = nineAmTime)
+        )
+        historyRepository.emitItems(historyItems)
+
+        val summary = getAnalyticsSummaryUseCase(timeRange = "Semua Waktu").first()
+
+        // Hourly breakdown at 08:00 - 12:00 should have 2 scans (100%)
+        val stats9Am = summary.hourlyBreakdown.find { it.timeWindow == "08:00 - 12:00" }
+        assertThat(stats9Am?.scanCount).isEqualTo(2)
+        assertThat(stats9Am?.percent).isEqualTo(100)
+
+        // Device stats: 1 iOS link, 1 Android scan
+        assertThat(summary.deviceStats.iosCount).isEqualTo(1)
+        assertThat(summary.deviceStats.androidCount).isEqualTo(1)
+        assertThat(summary.deviceStats.iosPercent).isEqualTo(50)
+        assertThat(summary.deviceStats.androidPercent).isEqualTo(50)
+
+        // Top locations: Surabaya detected
+        assertThat(summary.topLocations.any { it.cityName == "Surabaya" }).isTrue()
+    }
 }

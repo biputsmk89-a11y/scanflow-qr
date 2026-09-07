@@ -144,4 +144,19 @@ class SettingsAndSecurityViewModelTest {
 
         assertThat(securityViewModel.settings.value.isBiometricEnabled).isTrue()
     }
+
+    @Test
+    fun `SecurityViewModel updates lock timeout`() = runTest(testDispatcher) {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            securityViewModel.settings.collect {}
+        }
+        advanceUntilIdle()
+
+        assertThat(securityViewModel.settings.value.lockTimeoutSeconds).isEqualTo(0L)
+
+        securityViewModel.setLockTimeout(300L)
+        advanceUntilIdle()
+
+        assertThat(securityViewModel.settings.value.lockTimeoutSeconds).isEqualTo(300L)
+    }
 }

@@ -68,9 +68,17 @@ class FakeSettingsRepository : SettingsRepository {
     override suspend fun updateAutoCopy(enabled: Boolean) {}
     override suspend fun updateAppLock(enabled: Boolean) {}
     override suspend fun updateBiometric(enabled: Boolean) {}
+    override suspend fun updateLockTimeout(seconds: Long) {}
     override suspend fun updatePinCode(pin: String?) {}
     override suspend fun setOnboardingCompleted(completed: Boolean) {}
     override suspend fun updateDynamicColor(enabled: Boolean) {}
+    override suspend fun updateAutoScan(enabled: Boolean) {}
+    override suspend fun updateLanguage(lang: String) {}
+    override suspend fun updateSaveScanHistory(enabled: Boolean) {}
+    override suspend fun updateSendAnonymousAnalytics(enabled: Boolean) {}
+    override suspend fun updateSafeUrlDetection(enabled: Boolean) {}
+    override suspend fun updateSuspiciousQrWarning(enabled: Boolean) {}
+    override suspend fun updateClipboardProtection(enabled: Boolean) {}
 }
 
 class FakeHistoryRepository : HistoryRepository {
@@ -278,5 +286,67 @@ class BatchScanningTest {
         assertThat(summary).contains("Laporan Sesi Pindai Batch")
         assertThat(summary).contains("Total Item: 1")
         assertThat(summary).contains("ABSEN-BUDI")
+    }
+
+    @Test
+    fun `setZoomRatio sets ratio clamped between min and max bounds`() = runTest {
+        viewModel.setZoomBounds(1.0f, 5.0f)
+
+        viewModel.setZoomRatio(2.0f)
+        assertThat(viewModel.uiState.value.zoomRatio).isEqualTo(2.0f)
+
+        // Above max
+        viewModel.setZoomRatio(10.0f)
+        assertThat(viewModel.uiState.value.zoomRatio).isEqualTo(5.0f)
+
+        // Below min
+        viewModel.setZoomRatio(0.5f)
+        assertThat(viewModel.uiState.value.zoomRatio).isEqualTo(1.0f)
+    }
+
+    @Test
+    fun `setZoomBounds updates bounds and coerces existing ratio`() = runTest {
+        viewModel.setZoomRatio(4.0f)
+        assertThat(viewModel.uiState.value.zoomRatio).isEqualTo(4.0f)
+
+        // Lower max bound to 3.0f, current zoom should be clamped to 3.0f
+        viewModel.setZoomBounds(1.0f, 3.0f)
+        val state = viewModel.uiState.value
+        assertThat(state.minZoomRatio).isEqualTo(1.0f)
+        assertThat(state.maxZoomRatio).isEqualTo(3.0f)
+        assertThat(state.zoomRatio).isEqualTo(3.0f)
+    }
+
+    @Test
+    fun `applyZoomDelta scales zoom ratio within bounds`() = runTest {
+        viewModel.setZoomBounds(1.0f, 5.0f)
+        viewModel.setZoomRatio(2.0f)
+
+        // Pinch out (zoom in 1.5x)
+        viewModel.applyZoomDelta(1.5f)
+        assertThat(viewModel.uiState.value.zoomRatio).isEqualTo(3.0f)
+
+        // Pinch in (zoom out 0.5x)
+        viewModel.applyZoomDelta(0.5f)
+        assertThat(viewModel.uiState.value.zoomRatio).isEqualTo(1.5f)
+
+        // Exceed max
+        viewModel.applyZoomDelta(10.0f)
+        assertThat(viewModel.uiState.value.zoomRatio).isEqualTo(5.0f)
+    }
+
+    @Test
+    fun `generateBatchCsvString produces valid RFC 4180 CSV with escaped quotes`() = runTest {
+        viewModel.toggleBatchMode()
+        viewModel.onBarcodeDetected(rawValue = "ITEM-\"ALPHA\",TEST", format = "QR_CODE")
+        advanceUntilIdle()
+        viewModel.onBarcodeDetected(rawValue = "8998866200224", format = "EAN_13")
+        advanceUntilIdle()
+
+        val csv = viewModel.generateBatchCsvString()
+        assertThat(csv).contains(""""No","Scan ID","Date Time","Timestamp","Format","Category","Title","Content","Security Status"""")
+        assertThat(csv).contains("\"\"ALPHA\"\"")
+        assertThat(csv).contains("8998866200224")
+        assertThat(csv).contains("EAN_13")
     }
 }

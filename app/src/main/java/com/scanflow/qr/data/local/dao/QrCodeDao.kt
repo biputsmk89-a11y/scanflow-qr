@@ -29,6 +29,9 @@ interface QrCodeDao {
     @Update
     suspend fun updateQr(qr: QrCodeEntity)
 
+    @Query("UPDATE user_qr_codes SET foregroundColor = :fg, backgroundColor = :bg, patternStyle = :pattern, eyeStyle = :eye, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun updateQrStyle(id: Long, fg: Int, bg: Int, pattern: String, eye: String, updatedAt: Long = System.currentTimeMillis())
+
     @Query("UPDATE user_qr_codes SET isFavorite = :isFavorite WHERE id = :id")
     suspend fun updateFavoriteStatus(id: Long, isFavorite: Boolean)
 

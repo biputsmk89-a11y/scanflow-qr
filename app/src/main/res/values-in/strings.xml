@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ScanFlow QR</string>
+    <string name="tagline">Pindai. Buat. Hubungkan.</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_scan">Pindai</string>
+    <string name="nav_create">Buat</string>
+    <string name="nav_history">Riwayat</string>
+    <string name="nav_profile">Profil</string>
+    
+    <!-- Actions -->
+    <string name="action_scan_camera">Pindai Kamera</string>
+    <string name="action_scan_gallery">Pindai Gambar</string>
+    <string name="action_create_qr">Buat QR</string>
+    <string name="action_my_qr">QR Saya</string>
+    <string name="action_favorites">Favorit</string>
+    <string name="action_share">Bagikan</string>
+    <string name="action_export">Simpan Gambar</string>
+    <string name="action_copy">Salin</string>
+    <string name="action_delete">Hapus</string>
+    <string name="action_open_link">Buka Tautan</string>
+    <string name="action_call">Panggil</string>
+    <string name="action_send_email">Kirim Email</string>
+    <string name="action_send_sms">Kirim SMS</string>
+    <string name="action_open_map">Buka Peta</string>
+    <string name="action_connect_wifi">Sambungkan ke Wi-Fi</string>
+    <string name="action_save_contact">Simpan Kontak</string>
+    <string name="action_wifi_settings">Buka Setelan Wi-Fi Sistem</string>
+    
+    <!-- Wi-Fi Statuses -->
+    <string name="wifi_connecting">Menghubungkan ke Wi-Fi…</string>
+    <string name="wifi_connected">Terhubung ke Wi-Fi</string>
+    <string name="wifi_failed">Gagal Terhubung (Coba Lagi)</string>
+    <string name="wifi_invalid_ssid">Nama jaringan Wi-Fi (SSID) tidak valid.</string>
+    
+    <!-- Status & Alerts -->
+    <string name="status_secure">Tautan Aman (HTTPS)</string>
+    <string name="status_suspicious">Mencurigakan / Berbahaya</string>
+    <string name="copied_to_clipboard">Disalin ke papan klip</string>
+    <string name="qr_saved_successfully">QR Code berhasil disimpan ke galeri</string>
+    <string name="permission_camera_required">Izin kamera diperlukan untuk memindai kode QR dan barcode.</string>
+    <string name="grant_permission">Berikan Izin</string>
+
+    <!-- Settings & Security -->
+    <string name="settings_title">Pengaturan</string>
+    <string name="language_title">Bahasa</string>
+    <string name="language_en">English (US)</string>
+    <string name="language_id">Bahasa Indonesia</string>
+    <string name="theme_title">Mode Tema</string>
+    <string name="theme_dark">Mode Gelap</string>
+    <string name="theme_light">Mode Terang</string>
+    <string name="theme_system">Ikuti Sistem</string>
+    <string name="security_title">Keamanan &amp; Kunci Aplikasi</string>
+    <string name="lock_timeout_title">Batas Waktu Kunci (Timeout)</string>
+    <string name="lock_immediately">Segera</string>
+    <string name="lock_30s">30 Detik</string>
+    <string name="lock_1m">1 Menit</string>
+    <string name="lock_5m">5 Menit</string>
+    <string name="lock_15m">15 Menit</string>
+
+    <!-- Cloud Vault & Sync -->
+    <string name="cloud_vault_title">Cloud Vault &amp; Sinkronisasi</string>
+    <string name="cloud_vault_subtitle">Pencadangan Snapshot Cloud Terenkripsi End-to-End</string>
+    <string name="cloud_status_synced">Tersinkronisasi</string>
+    <string name="cloud_status_syncing">Menyinkronkan…</string>
+    <string name="cloud_status_failed">Gagal Sinkron</string>
+    <string name="cloud_status_local_only">Hanya Lokal</string>
+    <string name="cloud_action_sync_now">Sinkronkan Sekarang</string>
+    <string name="cloud_action_backup">Cadangkan ke Berkas</string>
+    <string name="cloud_action_restore">Pulihkan Cadangan</string>
+    <string name="cloud_last_synced">Sinkron terakhir: %s</string>
+    <string name="cloud_never_synced">Belum pernah disinkronkan</string>
+    <string name="cloud_just_now">Baru saja</string>
+    <string name="cloud_member_pro">Member PRO Cloud</string>
+    <string name="cloud_guest_mode">Mode Tamu (Lokal)</string>
+    <string name="cloud_connect_account">Masuk ke Akun Cloud</string>
+    <string name="cloud_e2ee_badge">Terenkripsi AES-256 E2EE</string>
+
+    <!-- Shortcuts & Quick Settings Tile -->
+    <string name="shortcut_scan_short">Pindai</string>
+    <string name="shortcut_scan_long">Pindai Cepat QR/Barcode</string>
+    <string name="shortcut_create_short">Buat QR</string>
+    <string name="shortcut_create_long">Buat Kode QR Baru</string>
+    <string name="shortcut_history_short">Riwayat</string>
+    <string name="shortcut_history_long">Riwayat Pindaian</string>
+    <string name="tile_scan_qr">Pindai QR</string>
+</resources>

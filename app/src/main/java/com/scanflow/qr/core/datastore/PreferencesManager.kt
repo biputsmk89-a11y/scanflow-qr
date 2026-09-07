@@ -34,6 +34,14 @@ class PreferencesManager(private val context: Context) {
     private val KEY_PIN_CODE = stringPreferencesKey("pin_code")
     private val KEY_ONBOARDING = booleanPreferencesKey("is_onboarding_completed")
     private val KEY_DYNAMIC_COLOR = booleanPreferencesKey("is_dynamic_color_enabled")
+    private val KEY_AUTO_SCAN = booleanPreferencesKey("auto_scan")
+    private val KEY_LANGUAGE = stringPreferencesKey("app_language")
+    private val KEY_SAVE_SCAN_HISTORY = booleanPreferencesKey("save_scan_history")
+    private val KEY_SEND_ANONYMOUS_ANALYTICS = booleanPreferencesKey("send_anonymous_analytics")
+    private val KEY_SAFE_URL_DETECTION = booleanPreferencesKey("safe_url_detection")
+    private val KEY_SUSPICIOUS_QR_WARNING = booleanPreferencesKey("suspicious_qr_warning")
+    private val KEY_CLIPBOARD_PROTECTION = booleanPreferencesKey("clipboard_protection")
+    private val KEY_LOCK_TIMEOUT = longPreferencesKey("lock_timeout_seconds")
 
     // Cloud Auth & Session
     private val KEY_USER_ID = stringPreferencesKey("auth_user_id")
@@ -67,7 +75,15 @@ class PreferencesManager(private val context: Context) {
                 isBiometricEnabled = pref[KEY_BIOMETRIC] ?: false,
                 pinCode = pref[KEY_PIN_CODE],
                 isOnboardingCompleted = pref[KEY_ONBOARDING] ?: false,
-                isDynamicColorEnabled = pref[KEY_DYNAMIC_COLOR] ?: true
+                isDynamicColorEnabled = pref[KEY_DYNAMIC_COLOR] ?: true,
+                autoScan = pref[KEY_AUTO_SCAN] ?: true,
+                language = pref[KEY_LANGUAGE] ?: "en",
+                saveScanHistory = pref[KEY_SAVE_SCAN_HISTORY] ?: true,
+                sendAnonymousAnalytics = pref[KEY_SEND_ANONYMOUS_ANALYTICS] ?: false,
+                safeUrlDetection = pref[KEY_SAFE_URL_DETECTION] ?: true,
+                suspiciousQrWarning = pref[KEY_SUSPICIOUS_QR_WARNING] ?: true,
+                clipboardProtection = pref[KEY_CLIPBOARD_PROTECTION] ?: true,
+                lockTimeoutSeconds = pref[KEY_LOCK_TIMEOUT] ?: 0L
             )
         }
 
@@ -101,8 +117,47 @@ class PreferencesManager(private val context: Context) {
         context.dataStore.edit { pref -> pref[KEY_BIOMETRIC] = enabled }
     }
 
+    suspend fun updateLockTimeout(seconds: Long) {
+        context.dataStore.edit { pref -> pref[KEY_LOCK_TIMEOUT] = seconds }
+    }
+
     suspend fun updateDynamicColor(enabled: Boolean) {
         context.dataStore.edit { pref -> pref[KEY_DYNAMIC_COLOR] = enabled }
+    }
+
+    suspend fun updateAutoScan(enabled: Boolean) {
+        context.dataStore.edit { pref -> pref[KEY_AUTO_SCAN] = enabled }
+    }
+
+    suspend fun updateLanguage(lang: String) {
+        context.dataStore.edit { pref -> pref[KEY_LANGUAGE] = lang }
+    }
+
+    suspend fun updateSaveScanHistory(enabled: Boolean) {
+        context.dataStore.edit { pref -> pref[KEY_SAVE_SCAN_HISTORY] = enabled }
+    }
+
+    suspend fun updateSendAnonymousAnalytics(enabled: Boolean) {
+        context.dataStore.edit { pref -> pref[KEY_SEND_ANONYMOUS_ANALYTICS] = enabled }
+    }
+
+    suspend fun updateSafeUrlDetection(enabled: Boolean) {
+        context.dataStore.edit { pref -> pref[KEY_SAFE_URL_DETECTION] = enabled }
+    }
+
+    suspend fun updateSuspiciousQrWarning(enabled: Boolean) {
+        context.dataStore.edit { pref -> pref[KEY_SUSPICIOUS_QR_WARNING] = enabled }
+    }
+
+    suspend fun updateClipboardProtection(enabled: Boolean) {
+        context.dataStore.edit { pref -> pref[KEY_CLIPBOARD_PROTECTION] = enabled }
+    }
+
+    suspend fun updateProfile(displayName: String, email: String) {
+        context.dataStore.edit { pref ->
+            pref[KEY_USER_DISPLAY_NAME] = displayName
+            pref[KEY_USER_EMAIL] = email
+        }
     }
 
     private fun hashPin(pin: String): String {

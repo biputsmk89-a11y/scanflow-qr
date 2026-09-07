@@ -48,6 +48,8 @@ class FakeQrGeneratorRepository : QrGeneratorRepository {
     override fun generateQrBitmap(content: String, config: QrStyleConfig): Bitmap? = null
 
     override suspend fun saveUserQr(userQrCode: UserQrCode): Long = 42L
+    override suspend fun updateUserQr(userQrCode: UserQrCode) {}
+    override suspend fun updateUserQrStyle(id: Long, config: QrStyleConfig) {}
     override fun getAllUserQrs(): Flow<List<UserQrCode>> = flowOf(listOf(dummyQr))
     override fun getFavoriteUserQrs(): Flow<List<UserQrCode>> = flowOf(emptyList())
     override suspend fun getUserQrById(id: Long): UserQrCode? = if (id == 42L) dummyQr else null
@@ -221,5 +223,39 @@ class VectorAndPdfExportTest {
         assertThat(qrRepository.exportedFormats).contains("PDF")
         assertThat(qrRepository.downloadCount).isEqualTo(2)
         assertThat(viewModel.uiState.value.exportSuccessMessage).contains("PDF")
+    }
+
+    @Test
+    fun `generateBarcodeSvg produces valid pure vector SVG for Code 128`() {
+        val svg = QrCodeGenerator.generateBarcodeSvg(
+            content = "SCANFLOW-12345",
+            formatName = "CODE_128",
+            foregroundColor = 0xFF000000.toInt(),
+            backgroundColor = 0xFFFFFFFF.toInt()
+        )
+        assertThat(svg).isNotNull()
+        assertThat(svg).startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
+        assertThat(svg).contains("<svg xmlns=\"http://www.w3.org/2000/svg\"")
+        assertThat(svg).contains("<rect")
+        assertThat(svg).contains("</svg>")
+    }
+
+    @Test
+    fun `generateBarcodeSvg produces valid pure vector SVG for EAN-13`() {
+        val svg = QrCodeGenerator.generateBarcodeSvg(
+            content = "8991234567890",
+            formatName = "EAN_13",
+            foregroundColor = 0xFF000000.toInt(),
+            backgroundColor = 0xFFFFFFFF.toInt()
+        )
+        assertThat(svg).isNotNull()
+        assertThat(svg).contains("<svg")
+        assertThat(svg).contains("viewBox=")
+    }
+
+    @Test
+    fun `generateBarcodeSvg returns null on empty content`() {
+        val svg = QrCodeGenerator.generateBarcodeSvg("")
+        assertThat(svg).isNull()
     }
 }

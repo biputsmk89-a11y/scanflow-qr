@@ -12,7 +12,8 @@ enum class QrType(val displayName: String) {
     CALENDAR("Calendar Event"),
     PAYMENT("Payment / Crypto"),
     SOCIAL("Social Media"),
-    BARCODE("Barcode");
+    BARCODE("Barcode"),
+    WHATSAPP("WhatsApp Chat");
 
     companion object {
         fun fromString(typeStr: String): QrType {

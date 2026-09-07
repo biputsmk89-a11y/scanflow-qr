@@ -94,6 +94,26 @@ class FakeQrGeneratorRepository : QrGeneratorRepository {
         return newId
     }
 
+    override suspend fun updateUserQr(userQrCode: UserQrCode) {
+        _createdQrs.value = _createdQrs.value.map {
+            if (it.id == userQrCode.id) userQrCode else it
+        }
+    }
+
+    override suspend fun updateUserQrStyle(id: Long, config: QrStyleConfig) {
+        _createdQrs.value = _createdQrs.value.map {
+            if (it.id == id) {
+                it.copy(
+                    foregroundColor = config.foregroundColor,
+                    backgroundColor = config.backgroundColor,
+                    patternStyle = config.patternStyle.name,
+                    eyeStyle = config.cornerEyeStyle.name,
+                    updatedAt = System.currentTimeMillis()
+                )
+            } else it
+        }
+    }
+
     override fun getAllUserQrs(): Flow<List<UserQrCode>> = _createdQrs
 
     override fun getFavoriteUserQrs(): Flow<List<UserQrCode>> =
@@ -181,6 +201,10 @@ class FakeSettingsRepository(
         _settings.value = _settings.value.copy(isBiometricEnabled = enabled)
     }
 
+    override suspend fun updateLockTimeout(seconds: Long) {
+        _settings.value = _settings.value.copy(lockTimeoutSeconds = seconds)
+    }
+
     override suspend fun updatePinCode(pin: String?) {
         _settings.value = _settings.value.copy(pinCode = pin)
     }
@@ -191,6 +215,34 @@ class FakeSettingsRepository(
 
     override suspend fun updateDynamicColor(enabled: Boolean) {
         _settings.value = _settings.value.copy(isDynamicColorEnabled = enabled)
+    }
+
+    override suspend fun updateAutoScan(enabled: Boolean) {
+        _settings.value = _settings.value.copy(autoScan = enabled)
+    }
+
+    override suspend fun updateLanguage(lang: String) {
+        _settings.value = _settings.value.copy(language = lang)
+    }
+
+    override suspend fun updateSaveScanHistory(enabled: Boolean) {
+        _settings.value = _settings.value.copy(saveScanHistory = enabled)
+    }
+
+    override suspend fun updateSendAnonymousAnalytics(enabled: Boolean) {
+        _settings.value = _settings.value.copy(sendAnonymousAnalytics = enabled)
+    }
+
+    override suspend fun updateSafeUrlDetection(enabled: Boolean) {
+        _settings.value = _settings.value.copy(safeUrlDetection = enabled)
+    }
+
+    override suspend fun updateSuspiciousQrWarning(enabled: Boolean) {
+        _settings.value = _settings.value.copy(suspiciousQrWarning = enabled)
+    }
+
+    override suspend fun updateClipboardProtection(enabled: Boolean) {
+        _settings.value = _settings.value.copy(clipboardProtection = enabled)
     }
 }
 

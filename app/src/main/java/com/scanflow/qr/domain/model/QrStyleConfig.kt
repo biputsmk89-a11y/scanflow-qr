@@ -6,7 +6,9 @@ data class QrStyleConfig(
     val patternStyle: QrPatternStyle = QrPatternStyle.SQUARE,
     val cornerEyeStyle: QrCornerStyle = QrCornerStyle.SQUARE,
     val size: Int = 512,
-    val margin: Int = 2
+    val margin: Int = 2,
+    val logoBitmap: android.graphics.Bitmap? = null,
+    val logoPath: String? = null
 )
 
 enum class QrPatternStyle(val title: String) {

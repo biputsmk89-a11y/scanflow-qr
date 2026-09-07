@@ -1,6 +1,9 @@
 package com.scanflow.qr.core.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,11 +12,16 @@ import androidx.navigation.navArgument
 import com.scanflow.qr.feature.about.AboutScreen
 import com.scanflow.qr.feature.analytics.AnalyticsScreen
 import com.scanflow.qr.feature.analytics.AnalyticsViewModel
+import com.scanflow.qr.feature.auth.AppLockScreen
 import com.scanflow.qr.feature.auth.AuthScreen
+import com.scanflow.qr.feature.auth.PinEntryScreen
+import com.scanflow.qr.feature.export.DataExportScreen
+import com.scanflow.qr.feature.export.DataExportViewModel
 import com.scanflow.qr.feature.favorites.FavoritesScreen
 import com.scanflow.qr.feature.favorites.FavoritesViewModel
 import com.scanflow.qr.feature.generator.CreateQrScreen
 import com.scanflow.qr.feature.generator.CreateQrViewModel
+import com.scanflow.qr.feature.history.HistoryScreen
 import com.scanflow.qr.feature.history.HistoryViewModel
 import com.scanflow.qr.feature.home.HomeViewModel
 import com.scanflow.qr.feature.main.MainScreen
@@ -48,8 +56,41 @@ fun ScanFlowNavGraph(
     myQrViewModel: MyQrViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel(),
     securityViewModel: SecurityViewModel = hiltViewModel(),
-    analyticsViewModel: AnalyticsViewModel = hiltViewModel()
+    analyticsViewModel: AnalyticsViewModel = hiltViewModel(),
+    dataExportViewModel: DataExportViewModel = hiltViewModel(),
+    sharedImageUri: android.net.Uri? = null,
+    onSharedUriHandled: () -> Unit = {},
+    shortcutRoute: String? = null,
+    onShortcutRouteHandled: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(shortcutRoute) {
+        val route = shortcutRoute ?: return@LaunchedEffect
+        navController.navigate(route) {
+            popUpTo(Screen.Main.route) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+        onShortcutRouteHandled()
+    }
+
+    LaunchedEffect(sharedImageUri) {
+        val uri = sharedImageUri ?: return@LaunchedEffect
+        scannerViewModel.scanImageFromGallery(
+            context = context,
+            imageUri = uri,
+            onNavigateResult = { scanId ->
+                navController.navigate(Screen.ScanResult.createRoute(scanId))
+                onSharedUriHandled()
+            },
+            onError = { errorMsg ->
+                android.widget.Toast.makeText(context, errorMsg, android.widget.Toast.LENGTH_LONG).show()
+                onSharedUriHandled()
+            }
+        )
+    }
+
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route
@@ -114,15 +155,18 @@ fun ScanFlowNavGraph(
                 homeViewModel = homeViewModel,
                 historyViewModel = historyViewModel,
                 createQrViewModel = createQrViewModel,
+                analyticsViewModel = analyticsViewModel,
                 onNavigateToScan = { navController.navigate(Screen.Scanner.route) },
                 onNavigateToFavorites = { navController.navigate(Screen.Favorites.route) },
                 onNavigateToMyQr = { navController.navigate(Screen.MyQr.route) },
+                onNavigateToHistory = { navController.navigate(Screen.History.route) },
                 onNavigateToResult = { id -> navController.navigate(Screen.ScanResult.createRoute(id)) },
                 onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                 onNavigateToSecurity = { navController.navigate(Screen.Security.route) },
                 onNavigateToAbout = { navController.navigate(Screen.About.route) },
-                onNavigateToAuth = { navController.navigate(Screen.Auth.route) }
+                onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
+                onNavigateToDataExport = { navController.navigate(Screen.DataExport.route) }
             )
         }
 
@@ -188,19 +232,57 @@ fun ScanFlowNavGraph(
             )
         }
 
+        composable(Screen.History.route) {
+            HistoryScreen(
+                viewModel = historyViewModel,
+                onNavigateToResult = { id: Long -> navController.navigate(Screen.ScanResult.createRoute(id)) },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         composable(Screen.Settings.route) {
             SettingsScreen(
                 viewModel = settingsViewModel,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToSecurity = { navController.navigate(Screen.Security.route) },
                 onNavigateToAnalytics = { navController.navigate(Screen.Analytics.route) },
-                onNavigateToAbout = { navController.navigate(Screen.About.route) }
+                onNavigateToAbout = { navController.navigate(Screen.About.route) },
+                onNavigateToDataExport = { navController.navigate(Screen.DataExport.route) }
+            )
+        }
+
+        composable(Screen.DataExport.route) {
+            DataExportScreen(
+                viewModel = dataExportViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
         composable(Screen.Security.route) {
             SecurityScreen(
                 viewModel = securityViewModel,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAppLock = { navController.navigate(Screen.AppLock.route) },
+                onNavigateToPinEntry = { navController.navigate(Screen.PinEntry.route) }
+            )
+        }
+
+        composable(Screen.AppLock.route) {
+            val settings by settingsViewModel.settings.collectAsState()
+            AppLockScreen(
+                settings = settings,
+                onUnlockSuccess = { navController.popBackStack() },
+                onCancel = { navController.popBackStack() },
+                onNavigateToPin = { navController.navigate(Screen.PinEntry.route) },
+                isTestingMode = true
+            )
+        }
+
+        composable(Screen.PinEntry.route) {
+            val settings by settingsViewModel.settings.collectAsState()
+            PinEntryScreen(
+                settings = settings,
+                onPinSuccess = { navController.popBackStack() },
                 onNavigateBack = { navController.popBackStack() }
             )
         }

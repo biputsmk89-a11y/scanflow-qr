@@ -129,4 +129,80 @@ class ScanResultViewModelTest {
         val repoItem = historyRepository.getHistoryItemById(42L)
         assertThat(repoItem).isNull()
     }
+
+    @Test
+    fun `loadScanResult with WiFi QR populates SSID and password correctly`() = runTest(testDispatcher) {
+        val scan = ScanHistoryItem(
+            id = 55L,
+            content = "WIFI:T:WPA;S:MyHomeWiFi;P:SuperSecretPass;H:false;;",
+            format = "QR_CODE",
+            type = QrType.WIFI,
+            title = "MyHomeWiFi",
+            createdAt = 2000L,
+            isFavorite = false
+        )
+        historyRepository.emitItems(listOf(scan))
+
+        viewModel.loadScanResult(55L)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(state.isLoading).isFalse()
+        assertThat(state.parsedData).isNotNull()
+        assertThat(state.parsedData?.type).isEqualTo(QrType.WIFI)
+        assertThat(state.parsedData?.displayDetails?.get("Network (SSID)")).isEqualTo("MyHomeWiFi")
+        assertThat(state.parsedData?.displayDetails?.get("Password")).isEqualTo("SuperSecretPass")
+        assertThat(state.wifiConnectionStatus).isEqualTo(com.scanflow.qr.core.utils.WifiConnectionStatus.IDLE)
+    }
+
+    @Test
+    fun `loadScanResult with 1D Barcode parses type as BARCODE and displayDetails`() = runTest(testDispatcher) {
+        val scan = ScanHistoryItem(
+            id = 77L,
+            content = "8992761136015",
+            format = "EAN_13",
+            type = QrType.BARCODE,
+            title = "Barcode (EAN_13)",
+            createdAt = 3000L,
+            isFavorite = false
+        )
+        historyRepository.emitItems(listOf(scan))
+
+        viewModel.loadScanResult(77L)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(state.isLoading).isFalse()
+        assertThat(state.parsedData).isNotNull()
+        assertThat(state.parsedData?.type).isEqualTo(QrType.BARCODE)
+        assertThat(state.parsedData?.displayDetails?.get("Code")).isEqualTo("8992761136015")
+        assertThat(state.parsedData?.displayDetails?.get("Symbology")).isEqualTo("EAN_13")
+    }
+
+    @Test
+    fun `loadScanResult with vCard parses structured contact fields`() = runTest(testDispatcher) {
+        val vcard = "BEGIN:VCARD\nVERSION:3.0\nN:Santoso;Budi;;;\nFN:Budi Santoso\nTEL:+628123456789\nEMAIL:budi@scanflow.app\nORG:PT ScanFlow Indonesia\nEND:VCARD"
+        val scan = ScanHistoryItem(
+            id = 88L,
+            content = vcard,
+            format = "QR_CODE",
+            type = QrType.CONTACT,
+            title = "Budi Santoso",
+            createdAt = 4000L,
+            isFavorite = false
+        )
+        historyRepository.emitItems(listOf(scan))
+
+        viewModel.loadScanResult(88L)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertThat(state.isLoading).isFalse()
+        assertThat(state.parsedData).isNotNull()
+        assertThat(state.parsedData?.type).isEqualTo(QrType.CONTACT)
+        assertThat(state.parsedData?.displayDetails?.get("Name")).contains("Budi Santoso")
+        assertThat(state.parsedData?.displayDetails?.get("Phone")).isEqualTo("+628123456789")
+        assertThat(state.parsedData?.displayDetails?.get("Email")).isEqualTo("budi@scanflow.app")
+        assertThat(state.parsedData?.displayDetails?.get("Organization")).isEqualTo("PT ScanFlow Indonesia")
+    }
 }

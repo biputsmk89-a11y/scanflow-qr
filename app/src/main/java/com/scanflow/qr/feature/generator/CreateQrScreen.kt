@@ -1,5 +1,7 @@
 package com.scanflow.qr.feature.generator
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -7,6 +9,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.ui.platform.LocalContext
+import com.scanflow.qr.ScanFlowApplication
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.ContactPage
 import androidx.compose.material.icons.filled.Email
@@ -42,6 +48,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.ReceiptLong
@@ -53,7 +60,9 @@ import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.ViewWeek
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -93,6 +102,7 @@ import androidx.compose.ui.unit.dp
 import com.scanflow.qr.core.designsystem.CyanAccent
 import com.scanflow.qr.core.designsystem.Dimens
 import com.scanflow.qr.core.designsystem.ElectricBlue
+import com.scanflow.qr.core.designsystem.ElectricBlueLight
 import com.scanflow.qr.core.designsystem.ScanFlowCard
 import com.scanflow.qr.core.designsystem.ScanFlowChip
 import com.scanflow.qr.core.designsystem.ScanFlowPrimaryButton
@@ -118,12 +128,33 @@ fun CreateQrScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var isFormOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val contactPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickContact()
+    ) { uri ->
+        (context.applicationContext as? ScanFlowApplication)?.container?.appLockManager?.setTemporarilyBypassed(true)
+        if (uri != null) {
+            viewModel.importContactFromUri(context, uri)
+        }
+    }
+
+    val whatsappContactPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickContact()
+    ) { uri ->
+        (context.applicationContext as? ScanFlowApplication)?.container?.appLockManager?.setTemporarilyBypassed(true)
+        if (uri != null) {
+            viewModel.importPhoneForWhatsapp(context, uri)
+        }
+    }
 
     val categories = remember {
         listOf(
             StitchQrCategoryItem(QrType.WEBSITE, "Website", "URL / Web Link", Icons.Default.Language, true),
+            StitchQrCategoryItem(QrType.WHATSAPP, "WhatsApp", "Chat & Auto-Text", Icons.Default.Sms, true),
             StitchQrCategoryItem(QrType.TEXT, "Text", "Plain Text / Notes", Icons.Default.Notes, false),
             StitchQrCategoryItem(QrType.WIFI, "WiFi", "Network Credentials", Icons.Default.Wifi, true),
+            StitchQrCategoryItem(QrType.BARCODE, "Barcode", "1D Code 128 / EAN / UPC", Icons.Default.ViewWeek, true),
             StitchQrCategoryItem(QrType.CONTACT, "Contact", "vCard Profile", Icons.Default.ContactPage, false),
             StitchQrCategoryItem(QrType.EMAIL, "Email", "Send Mail", Icons.Default.Email, true),
             StitchQrCategoryItem(QrType.PHONE, "Phone", "Direct Dial", Icons.Default.Call, false),
@@ -142,7 +173,9 @@ fun CreateQrScreen(
                         text = if (isFormOpen) {
                             when (uiState.selectedType) {
                                 QrType.WIFI -> "Create WiFi QR"
+                                QrType.WHATSAPP -> "Create WhatsApp QR"
                                 QrType.PAYMENT -> "ScanFlow QR"
+                                QrType.CONTACT -> "Create Contact QR"
                                 else -> uiState.selectedType.displayName
                             }
                         } else "ScanFlow QR",
@@ -255,6 +288,18 @@ fun CreateQrScreen(
                     }
                     QrType.PAYMENT -> {
                         StitchPaymentGeneratorView(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onBack = { isFormOpen = false },
+                            onGenerate = {
+                                viewModel.generateAndSaveQr { newId ->
+                                    onNavigateToPreview(newId)
+                                }
+                            }
+                        )
+                    }
+                    QrType.CONTACT -> {
+                        StitchContactGeneratorView(
                             uiState = uiState,
                             viewModel = viewModel,
                             onBack = { isFormOpen = false },
@@ -388,6 +433,32 @@ fun CreateQrScreen(
                                     }
                                 }
                                 QrType.CONTACT -> {
+                                    OutlinedButton(
+                                        onClick = {
+                                            (context.applicationContext as? ScanFlowApplication)?.container?.appLockManager?.setTemporarilyBypassed(true)
+                                            contactPickerLauncher.launch(null)
+                                        },
+                                        modifier = Modifier.fillMaxWidth().height(46.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.5f))
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.PersonAdd,
+                                            contentDescription = null,
+                                            tint = ElectricBlue,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Ambil Langsung dari Kontak HP",
+                                            fontWeight = FontWeight.Bold,
+                                            color = ElectricBlue,
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing16))
+
                                     ScanFlowTextField(
                                         value = uiState.contactName,
                                         onValueChange = { viewModel.updateField { copy(contactName = it) } },
@@ -414,6 +485,131 @@ fun CreateQrScreen(
                                         leadingIcon = Icons.Default.Email,
                                         modifier = Modifier.fillMaxWidth()
                                     )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                    ScanFlowTextField(
+                                        value = uiState.contactOrg,
+                                        onValueChange = { viewModel.updateField { copy(contactOrg = it) } },
+                                        label = "Organization / Company",
+                                        placeholder = "ScanFlow Inc.",
+                                        leadingIcon = Icons.Default.Business,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                    ScanFlowTextField(
+                                        value = uiState.contactJobTitle,
+                                        onValueChange = { viewModel.updateField { copy(contactJobTitle = it) } },
+                                        label = "Job Title",
+                                        placeholder = "Product Manager",
+                                        leadingIcon = Icons.Default.Work,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                QrType.WHATSAPP -> {
+                                    Text(
+                                        text = "Kode Negara (Country Code)",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8)
+                                    ) {
+                                        listOf("+62 (ID)", "+1 (US)", "+60 (MY)", "+65 (SG)", "+44 (UK)", "+91 (IN)").forEach { codeLabel ->
+                                            val code = codeLabel.substringBefore(" ")
+                                            ScanFlowChip(
+                                                text = codeLabel,
+                                                selected = uiState.whatsappCountryCode == code,
+                                                onClick = { viewModel.updateField { copy(whatsappCountryCode = code) } }
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing16))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Nomor WhatsApp",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        OutlinedButton(
+                                            onClick = {
+                                                (context.applicationContext as? ScanFlowApplication)?.container?.appLockManager?.setTemporarilyBypassed(true)
+                                                whatsappContactPickerLauncher.launch(null)
+                                            },
+                                            shape = RoundedCornerShape(8.dp),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                            modifier = Modifier.height(30.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.PersonAdd,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                                tint = ElectricBlue
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = "Dari Kontak",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = ElectricBlue
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing4))
+
+                                    ScanFlowTextField(
+                                        value = uiState.whatsappPhone,
+                                        onValueChange = { viewModel.updateField { copy(whatsappPhone = it) } },
+                                        label = "Nomor Telepon",
+                                        placeholder = "Contoh: 08123456789 atau 8123456789",
+                                        leadingIcon = Icons.Default.Call,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+
+                                    ScanFlowTextField(
+                                        value = uiState.whatsappMessage,
+                                        onValueChange = { viewModel.updateField { copy(whatsappMessage = it) } },
+                                        label = "Draf Pesan Otomatis (Auto-Text)",
+                                        placeholder = "Halo, saya tertarik dengan produk Anda...",
+                                        singleLine = false,
+                                        maxLines = 4,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+
+                                    val cleanNum = viewModel.normalizeWhatsappNumber(uiState.whatsappCountryCode, uiState.whatsappPhone)
+                                    if (cleanNum.isNotEmpty()) {
+                                        Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Text(
+                                                    text = "Tautan Langsung WhatsApp:",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                                Text(
+                                                    text = "https://wa.me/$cleanNum" + (if (uiState.whatsappMessage.isNotBlank()) "?text=..." else ""),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = Color(0xFF25D366)
+                                                )
+                                            }
+                                        }
+                                    }
                                 }
                                 QrType.EMAIL -> {
                                     ScanFlowTextField(
@@ -553,6 +749,68 @@ fun CreateQrScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     )
                                 }
+                                QrType.BARCODE -> {
+                                    Text(
+                                        text = "Barcode Symbology",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(Dimens.Spacing8)
+                                    ) {
+                                        listOf(
+                                            "CODE_128" to "Code 128",
+                                            "EAN_13" to "EAN-13",
+                                            "UPC_A" to "UPC-A",
+                                            "CODE_39" to "Code 39",
+                                            "EAN_8" to "EAN-8"
+                                        ).forEach { (format, label) ->
+                                            ScanFlowChip(
+                                                text = label,
+                                                selected = uiState.barcodeFormat == format,
+                                                onClick = { viewModel.updateField { copy(barcodeFormat = format) } }
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing16))
+                                    ScanFlowTextField(
+                                        value = uiState.barcodeContent,
+                                        onValueChange = { viewModel.updateField { copy(barcodeContent = it) } },
+                                        label = when (uiState.barcodeFormat) {
+                                            "EAN_13" -> "EAN-13 Number (12-13 digit angka)"
+                                            "EAN_8" -> "EAN-8 Number (7-8 digit angka)"
+                                            "UPC_A" -> "UPC-A Number (11-12 digit angka)"
+                                            "CODE_39" -> "Code 39 Text (A-Z, 0-9)"
+                                            else -> "Barcode Value (ASCII Alphanumeric)"
+                                        },
+                                        placeholder = when (uiState.barcodeFormat) {
+                                            "EAN_13" -> "Contoh: 8991234567890"
+                                            "EAN_8" -> "Contoh: 96385074"
+                                            "UPC_A" -> "Contoh: 012345678905"
+                                            "CODE_39" -> "Contoh: ITEM-00123"
+                                            else -> "Contoh: SCANFLOW-99"
+                                        },
+                                        leadingIcon = Icons.Default.ViewWeek,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                                    Text(
+                                        text = when (uiState.barcodeFormat) {
+                                            "EAN_13" -> "Standar ritel global barang konsumsi (12 digit angka + 1 digit checksum)."
+                                            "EAN_8" -> "Versi ringkas EAN untuk kemasan produk berukuran kecil (7-8 digit angka)."
+                                            "UPC_A" -> "Standar ritel Amerika Serikat & Kanada (11-12 digit angka)."
+                                            "CODE_39" -> "Standar industri manufaktur. Mendukung huruf A-Z, angka 0-9, dan simbol (- . $ / + % spasi)."
+                                            else -> "Format 1D densitas tinggi paling umum untuk logistik dan inventaris (mendukung teks ASCII)."
+                                        },
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                                 else -> {}
                             }
                         }
@@ -572,7 +830,7 @@ fun CreateQrScreen(
 
                     // Generate Button
                     ScanFlowPrimaryButton(
-                        text = "Generate & Customize QR",
+                        text = if (uiState.selectedType == QrType.BARCODE) "Buat & Pratinjau Barcode" else "Generate & Customize QR",
                         icon = Icons.Default.AutoAwesome,
                         onClick = {
                             viewModel.generateAndSaveQr { newId ->
@@ -1110,3 +1368,245 @@ private fun StitchBentoTypeCard(
         }
     }
 }
+
+/**
+ * Stitch Contact QR Generator View (Exact Google Stitch UI/UX)
+ * Reference: Project ScanFlow QR Ecosystem - Screen "Contact QR Generator"
+ */
+@Composable
+private fun StitchContactGeneratorView(
+    uiState: CreateQrUiState,
+    viewModel: CreateQrViewModel,
+    onBack: () -> Unit,
+    onGenerate: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = Dimens.Spacing20),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Change Type Pill Button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            ScanFlowSecondaryButton(
+                text = "← Change Type",
+                onClick = onBack
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Hero Section (Exact Google Stitch Avatar + Description)
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .shadow(
+                    elevation = 10.dp,
+                    shape = CircleShape,
+                    spotColor = ElectricBlue.copy(alpha = 0.4f),
+                    ambientColor = ElectricBlue.copy(alpha = 0.2f)
+                )
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(ElectricBlueLight, ElectricBlue)
+                    ),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.PersonAdd,
+                contentDescription = "Contact Avatar",
+                tint = Color.White,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = "Create a digital business card. Share your contact info instantly via QR code.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Form Section (Card Container with 24dp radius and subtle border)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            shadowElevation = 3.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // 1. Full Name (Required)
+                StitchContactField(
+                    value = uiState.contactName,
+                    onValueChange = { viewModel.updateField { copy(contactName = it) } },
+                    placeholder = "Full Name",
+                    leadingIcon = Icons.Default.Person,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
+
+                // 2. Phone Number
+                StitchContactField(
+                    value = uiState.contactPhone,
+                    onValueChange = { viewModel.updateField { copy(contactPhone = it) } },
+                    placeholder = "Phone Number",
+                    leadingIcon = Icons.Default.Call,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                )
+
+                // 3. Email Address
+                StitchContactField(
+                    value = uiState.contactEmail,
+                    onValueChange = { viewModel.updateField { copy(contactEmail = it) } },
+                    placeholder = "Email Address",
+                    leadingIcon = Icons.Default.Email,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                )
+
+                // 4. Organization / Company
+                StitchContactField(
+                    value = uiState.contactOrg,
+                    onValueChange = { viewModel.updateField { copy(contactOrg = it) } },
+                    placeholder = "Organization / Company",
+                    leadingIcon = Icons.Default.Business,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
+
+                // 5. Job Title
+                StitchContactField(
+                    value = uiState.contactJobTitle,
+                    onValueChange = { viewModel.updateField { copy(contactJobTitle = it) } },
+                    placeholder = "Job Title",
+                    leadingIcon = Icons.Default.Work,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
+
+                // 6. Website URL
+                StitchContactField(
+                    value = uiState.contactWebsite,
+                    onValueChange = { viewModel.updateField { copy(contactWebsite = it) } },
+                    placeholder = "Website URL",
+                    leadingIcon = Icons.Default.Language,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                )
+
+                // 7. Full Address
+                StitchContactField(
+                    value = uiState.contactAddress,
+                    onValueChange = { viewModel.updateField { copy(contactAddress = it) } },
+                    placeholder = "Full Address",
+                    leadingIcon = Icons.Default.LocationOn,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
+
+                if (uiState.errorMessage != null) {
+                    Text(
+                        text = uiState.errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = Dimens.Spacing4)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Primary CTA (Generate Contact QR)
+                Button(
+                    onClick = onGenerate,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = CircleShape,
+                            spotColor = ElectricBlue.copy(alpha = 0.45f)
+                        ),
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = ElectricBlue,
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCode,
+                        contentDescription = null,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Generate Contact QR",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(100.dp))
+    }
+}
+
+/**
+ * Clean filled text field matching Google Stitch design specification:
+ * - Rounded 14dp corners
+ * - primary/5 tint background
+ * - Leading icon in outline variant color
+ * - Active focus border ElectricBlue
+ */
+@Composable
+private fun StitchContactField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    leadingIcon: ImageVector,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = {
+            Text(
+                text = placeholder,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = leadingIcon,
+                contentDescription = placeholder,
+                tint = MaterialTheme.colorScheme.outline
+            )
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(14.dp),
+        keyboardOptions = keyboardOptions,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = ElectricBlue,
+            unfocusedBorderColor = Color.Transparent,
+            focusedContainerColor = ElectricBlue.copy(alpha = 0.07f),
+            unfocusedContainerColor = ElectricBlue.copy(alpha = 0.04f),
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+        ),
+        modifier = modifier.fillMaxWidth()
+    )
+}
+

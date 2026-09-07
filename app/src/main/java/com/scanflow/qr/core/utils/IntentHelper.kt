@@ -75,13 +75,23 @@ object IntentHelper {
         }
     }
 
-    fun saveContact(context: Context, name: String, phone: String, email: String, org: String) {
+    fun saveContact(
+        context: Context,
+        name: String,
+        phone: String,
+        email: String,
+        org: String,
+        jobTitle: String = "",
+        address: String = ""
+    ) {
         try {
             val intent = Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI).apply {
                 putExtra(ContactsContract.Intents.Insert.NAME, name)
                 putExtra(ContactsContract.Intents.Insert.PHONE, phone)
                 putExtra(ContactsContract.Intents.Insert.EMAIL, email)
                 putExtra(ContactsContract.Intents.Insert.COMPANY, org)
+                if (jobTitle.isNotEmpty()) putExtra(ContactsContract.Intents.Insert.JOB_TITLE, jobTitle)
+                if (address.isNotEmpty()) putExtra(ContactsContract.Intents.Insert.POSTAL, address)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
@@ -140,5 +150,20 @@ object IntentHelper {
         } catch (e: Exception) {
             Toast.makeText(context, "Cannot open WiFi settings", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun searchProductGoogle(context: Context, query: String) {
+        val encoded = Uri.encode(query.trim())
+        openUrl(context, "https://www.google.com/search?q=$encoded")
+    }
+
+    fun searchProductBarcodeLookup(context: Context, barcode: String) {
+        val encoded = Uri.encode(barcode.trim())
+        openUrl(context, "https://www.barcodelookup.com/$encoded")
+    }
+
+    fun searchOpenFoodFacts(context: Context, barcode: String) {
+        val encoded = Uri.encode(barcode.trim())
+        openUrl(context, "https://world.openfoodfacts.org/product/$encoded")
     }
 }

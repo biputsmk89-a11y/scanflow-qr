@@ -133,6 +133,51 @@ class HistoryViewModelTest {
     }
 
     @Test
+    fun `search query respects active filter type simultaneously`() = runTest(testDispatcher) {
+        val extraItems = sampleItems + ScanHistoryItem(
+            id = 4L,
+            content = "https://homenetwork.com",
+            format = "QR_CODE",
+            type = QrType.WEBSITE,
+            title = "HomeNetwork Portal",
+            createdAt = 4000L,
+            isFavorite = false
+        )
+        historyRepository.emitItems(extraItems)
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        // 1. Search without filter -> finds both WiFi and Website containing "HomeNetwork"
+        viewModel.onSearchQueryChanged("HomeNetwork")
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.items).hasSize(2)
+
+        // 2. Apply WiFi filter while search query is still "HomeNetwork" -> only finds WiFi item
+        viewModel.selectFilterType(QrType.WIFI)
+        advanceUntilIdle()
+        val wifiState = viewModel.uiState.value
+        assertThat(wifiState.items).hasSize(1)
+        assertThat(wifiState.items.first().id).isEqualTo(2L)
+        assertThat(wifiState.items.first().type).isEqualTo(QrType.WIFI)
+
+        // 3. Switch filter to WEBSITE while search query is "HomeNetwork" -> only finds Website item
+        viewModel.selectFilterType(QrType.WEBSITE)
+        advanceUntilIdle()
+        val websiteState = viewModel.uiState.value
+        assertThat(websiteState.items).hasSize(1)
+        assertThat(websiteState.items.first().id).isEqualTo(4L)
+        assertThat(websiteState.items.first().type).isEqualTo(QrType.WEBSITE)
+
+        // 4. Switch filter to PHONE while search query is "HomeNetwork" -> returns empty list
+        viewModel.selectFilterType(QrType.PHONE)
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.items).isEmpty()
+    }
+
+    @Test
     fun `toggle selection enables selection mode and tracks selected item IDs`() = runTest(testDispatcher) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.uiState.collect {}
@@ -232,4 +277,46 @@ class HistoryViewModelTest {
         val updatedItem = historyRepository.getHistoryItemById(1L)
         assertThat(updatedItem?.isFavorite).isTrue()
     }
+
+    @Test
+    fun `generateCsvString produces valid RFC 4180 headers and escaped records`() {
+        val csv = viewModel.generateCsvString(sampleItems)
+
+        assertThat(csv).startsWith("ID,Date Time,Timestamp,Format,Category,Title,Content,Favorite,Security Warning\n")
+        assertThat(csv).contains("\"QR_CODE\",\"WEBSITE\",\"Example Domain\",\"https://example.com\",\"No\"")
+        assertThat(csv).contains("\"QR_CODE\",\"WIFI\",\"Wi-Fi: HomeNetwork\",\"WIFI:T:WPA;S:HomeNetwork;P:pass123;;\",\"Yes\"")
+        assertThat(csv).contains("\"QR_CODE\",\"PHONE\",\"Phone: +62812345678\",\"tel:+62812345678\",\"No\"")
+    }
+
+    @Test
+    fun `generateCsvString handles special characters quotes and commas properly`() {
+        val trickyItem = listOf(
+            ScanHistoryItem(
+                id = 99L,
+                content = "Item with, comma and \"quotes\" and\nnewlines",
+                format = "CODE_128",
+                type = QrType.BARCODE,
+                title = "Item \"Pro\", Edition",
+                createdAt = 5000L,
+                isFavorite = true,
+                safetyWarning = "Suspicious, \"check\" domain"
+            )
+        )
+
+        val csv = viewModel.generateCsvString(trickyItem)
+
+        // Verifies quotes are doubled per RFC 4180
+        assertThat(csv).contains("\"Item \"\"Pro\"\", Edition\"")
+        assertThat(csv).contains("\"Item with, comma and \"\"quotes\"\" and\nnewlines\"")
+        assertThat(csv).contains("\"Suspicious, \"\"check\"\" domain\"")
+        assertThat(csv).contains("\"CODE_128\",\"BARCODE\"")
+    }
+
+    @Test
+    fun `generateCsvString with empty list returns valid header`() {
+        val csv = viewModel.generateCsvString(emptyList())
+
+        assertThat(csv).isEqualTo("ID,Date Time,Timestamp,Format,Category,Title,Content,Favorite,Security Warning\n")
+    }
 }
+

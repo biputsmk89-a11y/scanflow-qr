@@ -85,7 +85,10 @@ object AppViewModelProvider {
             val container = scanFlowApplication().container
             SettingsViewModel(
                 getSettingsUseCase = container.getSettingsUseCase,
-                updateSettingsUseCase = container.updateSettingsUseCase
+                updateSettingsUseCase = container.updateSettingsUseCase,
+                syncRepository = container.syncRepository,
+                authRepository = container.authRepository,
+                appLockManager = container.appLockManager
             )
         }
         initializer {
@@ -105,7 +108,10 @@ object AppViewModelProvider {
             val container = scanFlowApplication().container
             com.scanflow.qr.feature.profile.ProfileViewModel(
                 authRepository = container.authRepository,
-                syncRepository = container.syncRepository
+                syncRepository = container.syncRepository,
+                settingsRepository = container.settingsRepository,
+                historyRepository = container.historyRepository,
+                qrRepository = container.qrGeneratorRepository
             )
         }
         initializer {

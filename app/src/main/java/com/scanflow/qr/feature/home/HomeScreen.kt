@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ViewWeek
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,6 +41,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -79,10 +81,13 @@ fun HomeScreen(
     onNavigateToHistory: () -> Unit,
     onNavigateToFavorites: () -> Unit,
     onNavigateToMyQr: () -> Unit,
-    onNavigateToResult: (Long) -> Unit
+    onNavigateToResult: (Long) -> Unit,
+    onNavigateToProfile: () -> Unit = {},
+    onNavigateToCreateBarcode: () -> Unit = onNavigateToCreate
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var showBarcodeDialog by remember { mutableStateOf(false) }
 
     val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
     val greetingText = when (currentHour) {
@@ -131,7 +136,7 @@ fun HomeScreen(
                     )
                 }
 
-                // Avatar Icon with Stitch glow border
+                // Avatar Icon with Stitch glow border and profile navigation
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -145,7 +150,8 @@ fun HomeScreen(
                             2.dp,
                             Brush.linearGradient(listOf(ElectricBlue, CyanAccent)),
                             CircleShape
-                        ),
+                        )
+                        .clickable(onClick = onNavigateToProfile),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -330,7 +336,7 @@ fun HomeScreen(
                     icon = Icons.Default.ViewWeek,
                     iconTint = Color(0xFFE65100),
                     containerColor = Color(0xFFFF9800).copy(alpha = 0.15f),
-                    onClick = onNavigateToScan,
+                    onClick = { showBarcodeDialog = true },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -415,6 +421,71 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
             }
         }
+    }
+
+    if (showBarcodeDialog) {
+        AlertDialog(
+            onDismissRequest = { showBarcodeDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ViewWeek,
+                        contentDescription = null,
+                        tint = Color(0xFFE65100),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Text(
+                        text = "Aksi Barcode 1D",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Pilih tindakan yang ingin Anda lakukan untuk barcode linier (Code 128, EAN-13, UPC-A, Code 39, dll.):",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = {
+                            showBarcodeDialog = false
+                            onNavigateToCreateBarcode()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.AddBox, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Buat Barcode Baru", fontWeight = FontWeight.Bold)
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            showBarcodeDialog = false
+                            onNavigateToScan()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pindai Barcode (Kamera)", fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showBarcodeDialog = false }) {
+                    Text("Tutup")
+                }
+            }
+        )
     }
 }
 

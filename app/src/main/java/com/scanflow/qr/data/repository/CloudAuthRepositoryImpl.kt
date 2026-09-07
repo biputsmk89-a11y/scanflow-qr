@@ -107,4 +107,20 @@ class CloudAuthRepositoryImpl(
     override suspend fun signOut() {
         preferencesManager.clearUserSession()
     }
+
+    override suspend fun updateProfile(name: String, email: String): Result<AuthUser> {
+        val cleanName = name.trim().ifEmpty { "ScanFlow User" }
+        val cleanEmail = email.trim()
+        preferencesManager.updateProfile(cleanName, cleanEmail)
+        val updatedUser = AuthUser(
+            id = "user_${UUID.nameUUIDFromBytes(cleanEmail.ifEmpty { "user" }.toByteArray())}",
+            email = cleanEmail.ifEmpty { null },
+            displayName = cleanName,
+            isGuest = false,
+            token = "jwt_${UUID.randomUUID()}",
+            lastLoginAt = System.currentTimeMillis()
+        )
+        preferencesManager.saveUserSession(updatedUser)
+        return Result.success(updatedUser)
+    }
 }

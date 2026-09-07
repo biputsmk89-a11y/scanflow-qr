@@ -169,6 +169,17 @@ class QrCodeParserTest {
     }
 
     @Test
+    fun `parse whatsapp url with wa_me correctly identifies WHATSAPP type`() {
+        val raw = "https://wa.me/628123456789?text=Halo%20Admin"
+        val result = QrCodeParser.parse(raw)
+
+        assertThat(result.type).isEqualTo(QrType.WHATSAPP)
+        assertThat(result.displayDetails["Phone Number"]).isEqualTo("+628123456789")
+        assertThat(result.displayDetails["Predefined Message"]).isEqualTo("Halo Admin")
+        assertThat(result.displayDetails["Link"]).isEqualTo(raw)
+    }
+
+    @Test
     fun `parse plain text fallback`() {
         val raw = "Simple plain text memo without schema"
         val result = QrCodeParser.parse(raw)

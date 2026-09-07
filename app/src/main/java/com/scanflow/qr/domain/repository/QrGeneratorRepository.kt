@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.Flow
 interface QrGeneratorRepository {
     fun generateQrBitmap(content: String, config: QrStyleConfig): Bitmap?
     suspend fun saveUserQr(userQrCode: UserQrCode): Long
+    suspend fun updateUserQr(userQrCode: UserQrCode)
+    suspend fun updateUserQrStyle(id: Long, config: QrStyleConfig)
     fun getAllUserQrs(): Flow<List<UserQrCode>>
     fun getFavoriteUserQrs(): Flow<List<UserQrCode>>
     suspend fun getUserQrById(id: Long): UserQrCode?
@@ -24,6 +26,20 @@ interface QrGeneratorRepository {
     suspend fun exportQrToGallery(bitmap: Bitmap, title: String): Uri?
     suspend fun cacheQrForSharing(bitmap: Bitmap, filename: String): Uri?
     fun generateQrSvg(content: String, config: QrStyleConfig): String?
+    fun generateBarcodeBitmap(
+        content: String,
+        formatName: String = "CODE_128",
+        width: Int = 800,
+        height: Int = 300,
+        foregroundColor: Int = 0xFF000000.toInt(),
+        backgroundColor: Int = 0xFFFFFFFF.toInt()
+    ): Bitmap? = null
+    fun generateBarcodeSvg(
+        content: String,
+        formatName: String = "CODE_128",
+        foregroundColor: Int = 0xFF000000.toInt(),
+        backgroundColor: Int = 0xFFFFFFFF.toInt()
+    ): String? = null
     suspend fun exportQrSvg(svgContent: String, title: String): Uri?
     suspend fun cacheQrSvgForSharing(svgContent: String, filename: String): Uri?
     suspend fun exportQrPdf(title: String, type: String, content: String, bitmap: Bitmap?, filename: String): Uri?
@@ -44,9 +60,17 @@ interface SettingsRepository {
     suspend fun updateAutoCopy(enabled: Boolean)
     suspend fun updateAppLock(enabled: Boolean)
     suspend fun updateBiometric(enabled: Boolean)
+    suspend fun updateLockTimeout(seconds: Long)
     suspend fun updatePinCode(pin: String?)
     suspend fun setOnboardingCompleted(completed: Boolean)
     suspend fun updateDynamicColor(enabled: Boolean)
+    suspend fun updateAutoScan(enabled: Boolean)
+    suspend fun updateLanguage(lang: String)
+    suspend fun updateSaveScanHistory(enabled: Boolean)
+    suspend fun updateSendAnonymousAnalytics(enabled: Boolean)
+    suspend fun updateSafeUrlDetection(enabled: Boolean)
+    suspend fun updateSuspiciousQrWarning(enabled: Boolean)
+    suspend fun updateClipboardProtection(enabled: Boolean)
 }
 
 interface AuthRepository {
@@ -55,6 +79,7 @@ interface AuthRepository {
     suspend fun signUp(email: String, password: String, displayName: String): Result<AuthUser>
     suspend fun signInAsGuest(): AuthUser
     suspend fun signOut()
+    suspend fun updateProfile(name: String, email: String): Result<AuthUser>
 }
 
 interface SyncRepository {

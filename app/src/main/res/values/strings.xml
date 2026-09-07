@@ -24,8 +24,15 @@
     <string name="action_send_email">Send Email</string>
     <string name="action_send_sms">Send SMS</string>
     <string name="action_open_map">Open Map</string>
-    <string name="action_connect_wifi">Connect WiFi</string>
+    <string name="action_connect_wifi">Connect to Wi-Fi</string>
     <string name="action_save_contact">Save Contact</string>
+    <string name="action_wifi_settings">Open System Wi-Fi Settings</string>
+    
+    <!-- Wi-Fi Statuses -->
+    <string name="wifi_connecting">Connecting to Wi-Fi…</string>
+    <string name="wifi_connected">Connected to Wi-Fi</string>
+    <string name="wifi_failed">Connection Failed (Retry)</string>
+    <string name="wifi_invalid_ssid">Invalid network name (SSID).</string>
     
     <!-- Status & Alerts -->
     <string name="status_secure">Secure URL</string>
@@ -34,4 +41,48 @@
     <string name="qr_saved_successfully">QR Code saved to gallery</string>
     <string name="permission_camera_required">Camera permission is required to scan QR and barcodes.</string>
     <string name="grant_permission">Grant Permission</string>
+
+    <!-- Settings & Security -->
+    <string name="settings_title">Settings</string>
+    <string name="language_title">Language</string>
+    <string name="language_en">English (US)</string>
+    <string name="language_id">Bahasa Indonesia</string>
+    <string name="theme_title">Theme Mode</string>
+    <string name="theme_dark">Dark Mode</string>
+    <string name="theme_light">Light Mode</string>
+    <string name="theme_system">Follow System</string>
+    <string name="security_title">Security &amp; App Lock</string>
+    <string name="lock_timeout_title">Lock Timeout</string>
+    <string name="lock_immediately">Immediately</string>
+    <string name="lock_30s">30 Seconds</string>
+    <string name="lock_1m">1 Minute</string>
+    <string name="lock_5m">5 Minutes</string>
+    <string name="lock_15m">15 Minutes</string>
+
+    <!-- Cloud Vault & Sync -->
+    <string name="cloud_vault_title">Cloud Vault &amp; Sync</string>
+    <string name="cloud_vault_subtitle">End-to-End Encrypted Cloud Snapshot</string>
+    <string name="cloud_status_synced">Synced</string>
+    <string name="cloud_status_syncing">Syncing…</string>
+    <string name="cloud_status_failed">Sync Failed</string>
+    <string name="cloud_status_local_only">Local Only</string>
+    <string name="cloud_action_sync_now">Sync Now</string>
+    <string name="cloud_action_backup">Export Backup</string>
+    <string name="cloud_action_restore">Restore Snapshot</string>
+    <string name="cloud_last_synced">Last sync: %s</string>
+    <string name="cloud_never_synced">Never synced</string>
+    <string name="cloud_just_now">Just now</string>
+    <string name="cloud_member_pro">PRO Cloud Member</string>
+    <string name="cloud_guest_mode">Guest Mode (Local)</string>
+    <string name="cloud_connect_account">Sign In to Cloud</string>
+    <string name="cloud_e2ee_badge">AES-256 E2EE Protected</string>
+
+    <!-- Shortcuts & Quick Settings Tile -->
+    <string name="shortcut_scan_short">Scan</string>
+    <string name="shortcut_scan_long">Quick Scan QR/Barcode</string>
+    <string name="shortcut_create_short">Create QR</string>
+    <string name="shortcut_create_long">Create New QR Code</string>
+    <string name="shortcut_history_short">History</string>
+    <string name="shortcut_history_long">Scan History Records</string>
+    <string name="tile_scan_qr">Scan QR Code</string>
 </resources>

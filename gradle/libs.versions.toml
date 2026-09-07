@@ -26,8 +26,10 @@ truth = "1.4.2"
 turbine = "1.1.0"
 hilt = "2.51.1"
 hiltNavigationCompose = "1.2.0"
+print = "1.0.0"
 
 [libraries]
+androidx-print = { group = "androidx.print", name = "print", version.ref = "print" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

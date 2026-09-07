@@ -58,3 +58,8 @@
 -keep class androidx.compose.material.icons.** { *; }
 -keepclassmembers class * extends androidx.compose.ui.Modifier { *; }
 
+# 10. AndroidX Print Helper
+-keep class androidx.print.** { *; }
+-dontwarn androidx.print.**
+
+

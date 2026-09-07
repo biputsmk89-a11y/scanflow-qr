@@ -65,6 +65,13 @@ class FakeCloudAuthRepository : AuthRepository {
     override suspend fun signOut() {
         _currentUser.value = AuthUser(id = "local_guest_user", email = null, displayName = "Guest User", isGuest = true)
     }
+
+    override suspend fun updateProfile(name: String, email: String): Result<AuthUser> {
+        val current = _currentUser.value
+        val updated = current.copy(displayName = name, email = email)
+        _currentUser.value = updated
+        return Result.success(updated)
+    }
 }
 
 class FakeCloudSyncRepository : SyncRepository {
@@ -169,5 +176,123 @@ class CloudAuthAndSyncTest {
         assertThat(state.syncStatus).isEqualTo(SyncStatus.SYNCED)
         assertThat(state.lastSyncTime).isNotNull()
         assertThat(state.feedbackMessage).contains("Sinkronisasi Berhasil")
+    }
+
+    @Test
+    fun profileViewModel_calculatesStorageUsageDynamically() = runTest {
+        val fakeHistory = com.scanflow.qr.di.FakeHistoryRepository()
+        val fakeQr = com.scanflow.qr.di.FakeQrGeneratorRepository()
+
+        val viewModel = ProfileViewModel(
+            authRepository = authRepository,
+            syncRepository = syncRepository,
+            historyRepository = fakeHistory,
+            qrRepository = fakeQr
+        )
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        // 1. Initial storage with empty data should show base overhead in KB
+        val initialStorage = viewModel.uiState.value.storageText
+        assertThat(initialStorage).contains("KB used")
+        assertThat(initialStorage).doesNotMatch("45MB used")
+
+        // 2. Add history items
+        val historyItems = listOf(
+            com.scanflow.qr.domain.model.ScanHistoryItem(
+                id = 1L,
+                title = "Item 1",
+                content = "A".repeat(1000),
+                type = com.scanflow.qr.domain.model.QrType.WEBSITE
+            ),
+            com.scanflow.qr.domain.model.ScanHistoryItem(
+                id = 2L,
+                title = "Item 2",
+                content = "B".repeat(2000),
+                type = com.scanflow.qr.domain.model.QrType.TEXT
+            )
+        )
+        fakeHistory.emitItems(historyItems)
+        advanceUntilIdle()
+
+        val updatedStorage = viewModel.uiState.value.storageText
+        assertThat(updatedStorage).contains("KB used")
+        assertThat(updatedStorage).isNotEqualTo(initialStorage)
+    }
+
+    @Test
+    fun profileViewModel_backupAndRestore_executesSuccessfully() = runTest {
+        val viewModel = ProfileViewModel(
+            authRepository = authRepository,
+            syncRepository = syncRepository
+        )
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        viewModel.backupToCloud()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.feedbackMessage).contains("berhasil diekspor")
+
+        viewModel.restoreFromCloud()
+        advanceUntilIdle()
+        assertThat(viewModel.uiState.value.feedbackMessage).contains("Pemulihan Berhasil")
+    }
+
+    @Test
+    fun profileViewModel_tracksTotalScansAndQrsAccurately() = runTest {
+        val fakeHistory = com.scanflow.qr.di.FakeHistoryRepository()
+        val fakeQr = com.scanflow.qr.di.FakeQrGeneratorRepository()
+
+        val viewModel = ProfileViewModel(
+            authRepository = authRepository,
+            syncRepository = syncRepository,
+            historyRepository = fakeHistory,
+            qrRepository = fakeQr
+        )
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.totalScans).isEqualTo(0)
+        assertThat(viewModel.uiState.value.totalQrs).isEqualTo(0)
+
+        fakeHistory.emitItems(listOf(
+            com.scanflow.qr.domain.model.ScanHistoryItem(id = 1L, title = "Scan 1", content = "123", type = com.scanflow.qr.domain.model.QrType.TEXT),
+            com.scanflow.qr.domain.model.ScanHistoryItem(id = 2L, title = "Scan 2", content = "456", type = com.scanflow.qr.domain.model.QrType.TEXT)
+        ))
+        fakeQr.saveUserQr(com.scanflow.qr.domain.model.UserQrCode(id = 1L, title = "My QR", content = "https://scanflow.app", type = com.scanflow.qr.domain.model.QrType.WEBSITE))
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.totalScans).isEqualTo(2)
+        assertThat(viewModel.uiState.value.totalQrs).isEqualTo(1)
+    }
+
+    @Test
+    fun settingsViewModel_syncNow_triggersSyncAndReturnsMessage() = runTest {
+        val mockSettingsRepo = com.scanflow.qr.di.FakeSettingsRepository()
+        val getSettingsUseCase = com.scanflow.qr.domain.usecase.GetSettingsUseCase(mockSettingsRepo)
+        val updateSettingsUseCase = com.scanflow.qr.domain.usecase.UpdateSettingsUseCase(mockSettingsRepo)
+
+        val settingsViewModel = com.scanflow.qr.feature.settings.SettingsViewModel(
+            getSettingsUseCase = getSettingsUseCase,
+            updateSettingsUseCase = updateSettingsUseCase,
+            syncRepository = syncRepository,
+            authRepository = authRepository
+        )
+
+        var resultMsg: String? = null
+        settingsViewModel.syncNow { resultMsg = it }
+        advanceUntilIdle()
+
+        assertThat(resultMsg).isNotNull()
+        assertThat(resultMsg).contains("Sinkronisasi Berhasil")
     }
 }

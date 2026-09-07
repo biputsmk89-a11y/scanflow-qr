@@ -1,13 +1,18 @@
 package com.scanflow.qr.feature.scanner
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
+import com.scanflow.qr.ScanFlowApplication
+import java.io.File
 import com.scanflow.qr.core.utils.SoundHelper
 import com.scanflow.qr.core.utils.VibratorHelper
 import com.scanflow.qr.domain.model.QrCodeData
@@ -47,6 +52,9 @@ data class ScannerUiState(
     val lastScannedId: Long? = null,
     val scanBannerMessage: String? = null,
     val isDuplicateWarning: Boolean = false,
+    val zoomRatio: Float = 1.0f,
+    val minZoomRatio: Float = 1.0f,
+    val maxZoomRatio: Float = 5.0f,
     val errorMessage: String? = null
 )
 
@@ -65,6 +73,27 @@ class ScannerViewModel @Inject constructor(
     private var lastScannedContent: String? = null
     private var lastScanTimestamp: Long = 0
     private var bannerJob: Job? = null
+
+    fun setZoomRatio(ratio: Float) {
+        val clamped = ratio.coerceIn(_uiState.value.minZoomRatio, _uiState.value.maxZoomRatio)
+        _uiState.value = _uiState.value.copy(zoomRatio = clamped)
+    }
+
+    fun setZoomBounds(min: Float, max: Float) {
+        val safeMin = if (min > 0f) min else 1.0f
+        val safeMax = if (max >= safeMin) max else 5.0f
+        val currentRatio = _uiState.value.zoomRatio.coerceIn(safeMin, safeMax)
+        _uiState.value = _uiState.value.copy(
+            minZoomRatio = safeMin,
+            maxZoomRatio = safeMax,
+            zoomRatio = currentRatio
+        )
+    }
+
+    fun applyZoomDelta(delta: Float) {
+        val newRatio = (_uiState.value.zoomRatio * delta).coerceIn(_uiState.value.minZoomRatio, _uiState.value.maxZoomRatio)
+        _uiState.value = _uiState.value.copy(zoomRatio = newRatio)
+    }
 
     fun toggleTorch() {
         _uiState.value = _uiState.value.copy(isTorchEnabled = !_uiState.value.isTorchEnabled)
@@ -113,6 +142,81 @@ class ScannerViewModel @Inject constructor(
                 deleteHistoryUseCase.deleteItem(scanId)
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+    }
+
+    /**
+     * Menghasilkan teks CSV berformat standar RFC 4180 dari daftar hasil pemindaian batch.
+     */
+    fun generateBatchCsvString(items: List<ScannedBatchItem> = _uiState.value.batchItems): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val sb = StringBuilder()
+        sb.append(""""No","Scan ID","Date Time","Timestamp","Format","Category","Title","Content","Security Status"""").append("\r\n")
+
+        items.forEachIndexed { index, item ->
+            val no = (index + 1).toString()
+            val id = item.scanId.toString()
+            val dateTime = dateFormat.format(Date(item.scannedAt))
+            val timestamp = item.scannedAt.toString()
+            val format = item.data.format
+            val category = item.data.type.name
+            val title = item.data.title
+            val content = item.data.rawContent
+            val security = if (item.data.isSecure) "SAFE" else "WARNING: ${item.data.securityWarning ?: "Suspicious"}"
+
+            val row = listOf(no, id, dateTime, timestamp, format, category, title, content, security)
+                .joinToString(",") { escapeCsvField(it) }
+
+            sb.append(row).append("\r\n")
+        }
+        return sb.toString()
+    }
+
+    private fun escapeCsvField(value: String): String {
+        val escaped = value.replace("\"", "\"\"")
+        return "\"$escaped\""
+    }
+
+    /**
+     * Membagikan berkas CSV sesi pemindaian massal ke aplikasi lain (WhatsApp, Drive, Email)
+     * melalui Android Share Sheet sistem.
+     */
+    fun shareBatchCsv(context: Context) {
+        val items = _uiState.value.batchItems
+        if (items.isEmpty()) {
+            Toast.makeText(context, "Tidak ada data batch untuk diekspor", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val csvContent = generateBatchCsvString(items)
+                val exportDir = File(context.cacheDir, "exports").apply { if (!exists()) mkdirs() }
+                val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val targetFile = File(exportDir, "ScanFlow_Batch_$timeStamp.csv")
+                targetFile.writeText(csvContent, Charsets.UTF_8)
+
+                val uri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    targetFile
+                )
+
+                (context.applicationContext as? ScanFlowApplication)?.appLockManager?.setTemporarilyBypassed(true)
+
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_SUBJECT, "Ekspor Sesi Batch ScanFlow QR ($timeStamp)")
+                    putExtra(Intent.EXTRA_TEXT, "Daftar pemindaian massal (${items.size} barcode) format spreadsheet CSV.")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+
+                context.startActivity(Intent.createChooser(shareIntent, "Bagikan Sesi Batch (CSV)"))
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "Gagal mengekspor CSV batch: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -207,7 +311,12 @@ class ScannerViewModel @Inject constructor(
         }
     }
 
-    fun scanImageFromGallery(context: Context, imageUri: Uri, onNavigateResult: (Long) -> Unit) {
+    fun scanImageFromGallery(
+        context: Context,
+        imageUri: Uri,
+        onNavigateResult: (Long) -> Unit,
+        onError: ((String) -> Unit)? = null
+    ) {
         viewModelScope.launch {
             try {
                 val inputImage = InputImage.fromFilePath(context, imageUri)
@@ -220,16 +329,26 @@ class ScannerViewModel @Inject constructor(
                             if (raw.isNotEmpty()) {
                                 val detectedFormat = getBarcodeFormatName(barcode.format)
                                 onBarcodeDetected(context, raw, detectedFormat, onNavigateResult)
+                            } else {
+                                val msg = "No QR or barcode content found in image."
+                                _uiState.value = _uiState.value.copy(errorMessage = msg)
+                                onError?.invoke(msg)
                             }
                         } else {
-                            _uiState.value = _uiState.value.copy(errorMessage = "No QR or barcode found in image.")
+                            val msg = "No QR or barcode found in image."
+                            _uiState.value = _uiState.value.copy(errorMessage = msg)
+                            onError?.invoke(msg)
                         }
                     }
                     .addOnFailureListener {
-                        _uiState.value = _uiState.value.copy(errorMessage = "Failed to process image: ${it.localizedMessage}")
+                        val msg = "Failed to process image: ${it.localizedMessage}"
+                        _uiState.value = _uiState.value.copy(errorMessage = msg)
+                        onError?.invoke(msg)
                     }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(errorMessage = "Error loading image: ${e.localizedMessage}")
+                val msg = "Error loading image: ${e.localizedMessage}"
+                _uiState.value = _uiState.value.copy(errorMessage = msg)
+                onError?.invoke(msg)
             }
         }
     }

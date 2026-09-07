@@ -46,6 +46,14 @@ class ScanFlowApplication : Application() {
         container = DefaultAppContainer(this)
     }
 
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= TRIM_MEMORY_BACKGROUND) {
+            com.scanflow.qr.core.utils.SoundHelper.release()
+        }
+    }
+
+
     val database: ScanFlowDatabase get() = container.database
     val preferencesManager: PreferencesManager get() = container.preferencesManager
 
@@ -57,6 +65,7 @@ class ScanFlowApplication : Application() {
     val settingsRepository: SettingsRepository get() = container.settingsRepository
     val authRepository: AuthRepository get() = container.authRepository
     val syncRepository: SyncRepository get() = container.syncRepository
+    val appLockManager: com.scanflow.qr.core.security.AppLockManager get() = container.appLockManager
 
     // UseCases
     val parseQrCodeUseCase: ParseQrCodeUseCase get() = container.parseQrCodeUseCase

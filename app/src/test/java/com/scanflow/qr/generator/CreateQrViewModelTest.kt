@@ -235,4 +235,107 @@ class CreateQrViewModelTest {
         assertThat(callbackCalled).isFalse()
         assertThat(viewModel.uiState.value.errorMessage).isNotNull()
     }
+
+    @Test
+    fun `generateAndSaveQr with BARCODE CODE_128 saves barcode correctly`() = runTest(testDispatcher) {
+        var generatedId: Long? = null
+        viewModel.selectType(QrType.BARCODE)
+        viewModel.updateField {
+            copy(
+                barcodeFormat = "CODE_128",
+                barcodeContent = "SCANFLOW-PRO-123"
+            )
+        }
+
+        viewModel.generateAndSaveQr { id -> generatedId = id }
+        advanceUntilIdle()
+
+        assertThat(generatedId).isNotNull()
+        val savedQr = qrRepository.getUserQrById(generatedId!!)
+        assertThat(savedQr).isNotNull()
+        assertThat(savedQr!!.type).isEqualTo(QrType.BARCODE)
+        assertThat(savedQr.content).isEqualTo("SCANFLOW-PRO-123")
+        assertThat(savedQr.patternStyle).isEqualTo("CODE_128")
+        assertThat(savedQr.title).isEqualTo("Barcode (Code 128): SCANFLOW-PRO-123")
+    }
+
+    @Test
+    fun `generateAndSaveQr with BARCODE EAN_13 validates 13 digits`() = runTest(testDispatcher) {
+        var generatedId: Long? = null
+        viewModel.selectType(QrType.BARCODE)
+        viewModel.updateField {
+            copy(
+                barcodeFormat = "EAN_13",
+                barcodeContent = "8991234567890"
+            )
+        }
+
+        viewModel.generateAndSaveQr { id -> generatedId = id }
+        advanceUntilIdle()
+
+        assertThat(generatedId).isNotNull()
+        val savedQr = qrRepository.getUserQrById(generatedId!!)
+        assertThat(savedQr).isNotNull()
+        assertThat(savedQr!!.type).isEqualTo(QrType.BARCODE)
+        assertThat(savedQr.content).isEqualTo("8991234567890")
+        assertThat(savedQr.patternStyle).isEqualTo("EAN_13")
+        assertThat(savedQr.title).isEqualTo("EAN-13: 8991234567890")
+    }
+
+    @Test
+    fun `generateAndSaveQr with BARCODE EAN_13 rejects non-digit input`() = runTest(testDispatcher) {
+        var callbackCalled = false
+        viewModel.selectType(QrType.BARCODE)
+        viewModel.updateField {
+            copy(
+                barcodeFormat = "EAN_13",
+                barcodeContent = "ABC1234567" // Invalid: not 12-13 digits
+            )
+        }
+
+        viewModel.generateAndSaveQr { callbackCalled = true }
+        advanceUntilIdle()
+
+        assertThat(callbackCalled).isFalse()
+        assertThat(viewModel.uiState.value.errorMessage).contains("EAN-13")
+    }
+
+    @Test
+    fun `generateAndSaveQr with WHATSAPP builds valid wa_me url with country code and auto text`() = runTest(testDispatcher) {
+        var generatedId: Long? = null
+        viewModel.selectType(QrType.WHATSAPP)
+        viewModel.updateField {
+            copy(
+                whatsappCountryCode = "+62",
+                whatsappPhone = "08123456789",
+                whatsappMessage = "Halo, saya tertarik dengan produk ScanFlow!"
+            )
+        }
+
+        viewModel.generateAndSaveQr { id -> generatedId = id }
+        advanceUntilIdle()
+
+        assertThat(generatedId).isNotNull()
+        val savedQr = qrRepository.getUserQrById(generatedId!!)
+        assertThat(savedQr).isNotNull()
+        assertThat(savedQr!!.type).isEqualTo(QrType.WHATSAPP)
+        assertThat(savedQr.content).startsWith("https://wa.me/628123456789?text=")
+        assertThat(savedQr.content).contains("Halo%2C%20saya%20tertarik")
+        assertThat(savedQr.title).isEqualTo("WhatsApp: +628123456789")
+    }
+
+    @Test
+    fun `normalizeWhatsappNumber handles local zero, existing country prefix, and spaces`() {
+        // Local number starting with 0
+        assertThat(viewModel.normalizeWhatsappNumber("+62", "0812-3456-7890")).isEqualTo("6281234567890")
+        // Number without zero or country code
+        assertThat(viewModel.normalizeWhatsappNumber("+62", "812 3456 7890")).isEqualTo("6281234567890")
+        // Number already containing country code 62
+        assertThat(viewModel.normalizeWhatsappNumber("+62", "+62 812-3456-7890")).isEqualTo("6281234567890")
+        // US number (+1)
+        assertThat(viewModel.normalizeWhatsappNumber("+1", "(555) 123-4567")).isEqualTo("15551234567")
+        // Empty phone
+        assertThat(viewModel.normalizeWhatsappNumber("+62", "")).isEmpty()
+    }
 }
+

@@ -23,8 +23,8 @@ android {
         applicationId = "com.scanflow.qr"
         minSdk = 24
         targetSdk = 34
-        versionCode = 14
-        versionName = "1.1.4"
+        versionCode = 15
+        versionName = "1.1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -47,6 +47,7 @@ android {
                 keyStorePath.isNullOrEmpty() -> null
                 file(keyStorePath).exists() -> file(keyStorePath)
                 rootProject.file(keyStorePath).exists() -> rootProject.file(keyStorePath)
+                rootProject.file(keyStorePath.replaceFirst("../", "")).exists() -> rootProject.file(keyStorePath.replaceFirst("../", ""))
                 else -> null
             }
 
@@ -138,6 +139,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.print)
 
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))

@@ -1,7 +1,5 @@
 package com.scanflow.qr.feature.result
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -28,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
@@ -37,22 +36,34 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.QrCode
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import com.scanflow.qr.core.utils.IntentHelper
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import com.scanflow.qr.core.utils.WifiConnectionStatus
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -115,6 +126,13 @@ fun ScanResultScreen(
                 actions = {
                     val scanItem = uiState.scanItem
                     if (scanItem != null) {
+                        IconButton(onClick = { viewModel.printScanResult(context) }) {
+                            Icon(
+                                imageVector = Icons.Default.Print,
+                                contentDescription = "Cetak ke Printer",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         IconButton(onClick = { viewModel.toggleFavorite() }) {
                             Icon(
                                 imageVector = if (scanItem.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
@@ -196,6 +214,8 @@ fun ScanResultScreen(
                             QrType.CONTACT -> Icons.Default.Person
                             QrType.EMAIL -> Icons.Default.Email
                             QrType.PHONE -> Icons.Default.Call
+                            QrType.SMS -> Icons.Default.Sms
+                            QrType.WHATSAPP -> Icons.Default.Sms
                             QrType.LOCATION -> Icons.Default.LocationOn
                             else -> Icons.Default.QrCode
                         },
@@ -291,38 +311,202 @@ fun ScanResultScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // Main Action Button (Open Link / Connect WiFi / Action)
+                        val isWifi = parsed.type == QrType.WIFI
+                        val wifiStatus = uiState.wifiConnectionStatus
+                        val isWifiConnecting = isWifi && wifiStatus == WifiConnectionStatus.CONNECTING
+
+                        val buttonContainerColor = when {
+                            isWifi && wifiStatus == WifiConnectionStatus.CONNECTED -> Color(0xFF00C853)
+                            isWifi && wifiStatus == WifiConnectionStatus.FAILED -> MaterialTheme.colorScheme.error
+                            isWifi && wifiStatus == WifiConnectionStatus.CONNECTING -> ElectricBlue.copy(alpha = 0.8f)
+                            else -> ElectricBlue
+                        }
+
                         Button(
                             onClick = {
-                                executePrimaryAction(context, scanItem.content, parsed.type)
+                                viewModel.performPrimaryAction(context)
                             },
+                            enabled = !isWifiConnecting,
                             shape = RoundedCornerShape(50),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = ElectricBlue,
-                                contentColor = Color.White
+                                containerColor = buttonContainerColor,
+                                contentColor = Color.White,
+                                disabledContainerColor = ElectricBlue.copy(alpha = 0.6f),
+                                disabledContentColor = Color.White
                             ),
                             elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = when (parsed.type) {
-                                    QrType.WEBSITE -> "Open Link"
-                                    QrType.WIFI -> "Connect to Wi-Fi"
-                                    QrType.EMAIL -> "Send Email"
-                                    QrType.PHONE -> "Call Number"
-                                    QrType.LOCATION -> "View on Maps"
-                                    else -> "Open Content"
-                                },
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelLarge
-                            )
+                            if (isWifiConnecting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Menghubungkan ke Wi-Fi...",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            } else {
+                                val is1DBarcode = parsed.type == QrType.BARCODE || scanItem.format in listOf("EAN_13", "EAN_8", "UPC_A", "UPC_E", "CODE_128", "CODE_39", "CODE_93", "ITF", "CODABAR")
+                                val actionIcon = when {
+                                    isWifi && wifiStatus == WifiConnectionStatus.CONNECTED -> Icons.Default.CheckCircle
+                                    isWifi && wifiStatus == WifiConnectionStatus.FAILED -> Icons.Default.Warning
+                                    is1DBarcode -> Icons.Default.Search
+                                    parsed.type == QrType.WEBSITE || parsed.type == QrType.SOCIAL -> Icons.AutoMirrored.Filled.OpenInNew
+                                    parsed.type == QrType.WIFI -> Icons.Default.Wifi
+                                    parsed.type == QrType.EMAIL -> Icons.Default.Email
+                                    parsed.type == QrType.PHONE -> Icons.Default.Call
+                                    parsed.type == QrType.SMS -> Icons.Default.Sms
+                                    parsed.type == QrType.WHATSAPP -> Icons.Default.Sms
+                                    parsed.type == QrType.LOCATION -> Icons.Default.LocationOn
+                                    parsed.type == QrType.CONTACT -> Icons.Default.Person
+                                    parsed.type == QrType.CALENDAR -> Icons.Default.CalendarToday
+                                    parsed.type == QrType.PAYMENT -> Icons.Default.Payments
+                                    else -> Icons.Default.ContentCopy
+                                }
+                                val actionText = when {
+                                    isWifi && wifiStatus == WifiConnectionStatus.CONNECTED -> "Terhubung ke Wi-Fi"
+                                    isWifi && wifiStatus == WifiConnectionStatus.FAILED -> "Coba Sambungkan Lagi"
+                                    is1DBarcode -> "Cari Produk di Web"
+                                    parsed.type == QrType.WEBSITE -> "Open Link"
+                                    parsed.type == QrType.WIFI -> "Sambungkan ke Wi-Fi"
+                                    parsed.type == QrType.EMAIL -> "Send Email"
+                                    parsed.type == QrType.PHONE -> "Call Number"
+                                    parsed.type == QrType.SMS -> "Send SMS"
+                                    parsed.type == QrType.WHATSAPP -> "Buka Chat WhatsApp"
+                                    parsed.type == QrType.LOCATION -> "View on Maps"
+                                    parsed.type == QrType.CONTACT -> "Save Contact"
+                                    parsed.type == QrType.CALENDAR -> "Add to Calendar"
+                                    parsed.type == QrType.PAYMENT -> "Pay Now"
+                                    parsed.type == QrType.SOCIAL -> "Open Social Profile"
+                                    else -> "Copy Content"
+                                }
+                                Icon(
+                                    imageVector = actionIcon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = actionText,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
+                        }
+
+                        val is1DBarcode = parsed.type == QrType.BARCODE || scanItem.format in listOf("EAN_13", "EAN_8", "UPC_A", "UPC_E", "CODE_128", "CODE_39", "CODE_93", "ITF", "CODABAR")
+                        if (is1DBarcode) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { viewModel.searchProductGoogle(context) },
+                                    modifier = Modifier.weight(1f).height(38.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                ) {
+                                    Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(15.dp), tint = ElectricBlue)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Google", style = MaterialTheme.typography.labelSmall)
+                                }
+                                OutlinedButton(
+                                    onClick = { viewModel.searchProductBarcodeLookup(context) },
+                                    modifier = Modifier.weight(1f).height(38.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                ) {
+                                    Icon(Icons.Default.Language, contentDescription = null, modifier = Modifier.size(15.dp), tint = ElectricBlue)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Lookup", style = MaterialTheme.typography.labelSmall)
+                                }
+                                OutlinedButton(
+                                    onClick = { viewModel.searchProductOpenFoodFacts(context) },
+                                    modifier = Modifier.weight(1f).height(38.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                                ) {
+                                    Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(15.dp), tint = ElectricBlue)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Food Facts", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        }
+
+                        // Wi-Fi Connection Status Feedback & Manual Settings Shortcut
+                        if (isWifi) {
+                            if (uiState.wifiConnectionMessage != null) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val bannerBg = when (wifiStatus) {
+                                    WifiConnectionStatus.CONNECTED -> Color(0xFF00C853).copy(alpha = 0.12f)
+                                    WifiConnectionStatus.FAILED -> MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+                                    else -> ElectricBlue.copy(alpha = 0.12f)
+                                }
+                                val bannerBorder = when (wifiStatus) {
+                                    WifiConnectionStatus.CONNECTED -> Color(0xFF00C853)
+                                    WifiConnectionStatus.FAILED -> MaterialTheme.colorScheme.error
+                                    else -> ElectricBlue
+                                }
+                                val bannerIcon = when (wifiStatus) {
+                                    WifiConnectionStatus.CONNECTED -> Icons.Default.CheckCircle
+                                    WifiConnectionStatus.FAILED -> Icons.Default.Warning
+                                    else -> Icons.Default.Wifi
+                                }
+
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = bannerBg,
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = BorderStroke(1.dp, bannerBorder.copy(alpha = 0.35f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = bannerIcon,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = bannerBorder
+                                        )
+                                        Text(
+                                            text = uiState.wifiConnectionMessage ?: "",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = { viewModel.openWifiSettings(context) },
+                                modifier = Modifier.fillMaxWidth().height(40.dp),
+                                shape = RoundedCornerShape(50),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Buka Setelan Wi-Fi Sistem",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }
@@ -330,18 +514,16 @@ fun ScanResultScreen(
 
             Spacer(modifier = Modifier.height(Dimens.Spacing24))
 
-            // 3. Stitch Action Grid (Copy, Share, Save)
+            // 3. Stitch Action Grid (Copy, Share, Print, Save)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 StitchResultActionButton(
                     title = "Copy",
                     icon = Icons.Default.ContentCopy,
                     onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("ScanFlow QR", scanItem.content))
-                        Toast.makeText(context, "Copied to clipboard!", Toast.LENGTH_SHORT).show()
+                        viewModel.copyContent(context)
                     },
                     modifier = Modifier.weight(1f)
                 )
@@ -350,12 +532,17 @@ fun ScanResultScreen(
                     title = "Share",
                     icon = Icons.Default.Share,
                     onClick = {
-                        val sendIntent = Intent().apply {
-                            action = Intent.ACTION_SEND
-                            putExtra(Intent.EXTRA_TEXT, scanItem.content)
-                            type = "text/plain"
-                        }
-                        context.startActivity(Intent.createChooser(sendIntent, "Share QR Content"))
+                        viewModel.shareContent(context)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+
+                StitchResultActionButton(
+                    title = "Print",
+                    icon = Icons.Default.Print,
+                    iconTint = ElectricBlue,
+                    onClick = {
+                        viewModel.printScanResult(context)
                     },
                     modifier = Modifier.weight(1f)
                 )
@@ -374,7 +561,133 @@ fun ScanResultScreen(
 
             Spacer(modifier = Modifier.height(Dimens.Spacing24))
 
-            // 4. Raw Details Accordion
+            // 4. Structured Data Details & Partial Extraction Card
+            if (parsed.displayDetails.isNotEmpty()) {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.QrCode,
+                                    contentDescription = null,
+                                    tint = ElectricBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Data Terurai (Ekstraksi Cepat)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(50),
+                                color = ElectricBlue.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = "${parsed.displayDetails.size} Bidang",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ElectricBlue,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        parsed.displayDetails.entries.forEachIndexed { index, (key, value) ->
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = key,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    SelectionContainer {
+                                        Text(
+                                            text = value,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (key.contains("Phone", ignoreCase = true)) {
+                                        IconButton(
+                                            onClick = { IntentHelper.callPhone(context, value) },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Call,
+                                                contentDescription = "Panggil $value",
+                                                tint = ElectricBlue,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+                                    if (key.contains("Email", ignoreCase = true) || key.contains("Recipient", ignoreCase = true)) {
+                                        IconButton(
+                                            onClick = { IntentHelper.sendEmail(context, value) },
+                                            modifier = Modifier.size(32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Email,
+                                                contentDescription = "Kirim Email ke $value",
+                                                tint = ElectricBlue,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        }
+                                    }
+
+                                    IconButton(
+                                        onClick = { viewModel.copyPartialContent(context, key, value) },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Salin $key",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Dimens.Spacing16))
+            }
+
+            // 5. Raw Details Accordion
             Card(
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(
@@ -454,34 +767,3 @@ private fun StitchResultActionButton(
     }
 }
 
-private fun executePrimaryAction(context: Context, rawValue: String, type: QrType) {
-    try {
-        when (type) {
-            QrType.WEBSITE -> {
-                val url = if (!rawValue.startsWith("http://") && !rawValue.startsWith("https://")) "https://$rawValue" else rawValue
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-            }
-            QrType.EMAIL -> {
-                val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                    data = Uri.parse("mailto:$rawValue")
-                }
-                context.startActivity(emailIntent)
-            }
-            QrType.PHONE -> {
-                val callIntent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$rawValue"))
-                context.startActivity(callIntent)
-            }
-            QrType.LOCATION -> {
-                val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=$rawValue"))
-                context.startActivity(mapIntent)
-            }
-            else -> {
-                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                clipboard.setPrimaryClip(ClipData.newPlainText("ScanFlow QR", rawValue))
-                Toast.makeText(context, "Content copied to clipboard", Toast.LENGTH_SHORT).show()
-            }
-        }
-    } catch (e: Exception) {
-        Toast.makeText(context, "Unable to open link: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
-    }
-}

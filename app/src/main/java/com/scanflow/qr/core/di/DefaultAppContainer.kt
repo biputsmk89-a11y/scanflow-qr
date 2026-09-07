@@ -44,6 +44,10 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
         PreferencesManager(context)
     }
 
+    override val appLockManager: com.scanflow.qr.core.security.AppLockManager by lazy {
+        com.scanflow.qr.core.security.AppLockManager()
+    }
+
     // Repositories
     override val scanRepository: ScanRepository by lazy {
         ScanRepositoryImpl(database)

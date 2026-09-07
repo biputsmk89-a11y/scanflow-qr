@@ -20,13 +20,32 @@ object QrCodeParser {
 
         // Check Barcode formats
         if (format != "QR_CODE" && format != "UNKNOWN" && format.isNotEmpty()) {
+            val gs1Info = Gs1BarcodeParser.parse(trimmed, format)
+            val details = mutableMapOf<String, String>()
+            details["Code"] = trimmed
+            details["Symbology"] = format
+            if (gs1Info != null) {
+                details["Country / Origin"] = "${gs1Info.flagEmoji} ${gs1Info.countryOrType}"
+                details["GS1 Prefix"] = gs1Info.prefix
+                if (gs1Info.isChecksumValid != null) {
+                    details["Checksum Status"] = if (gs1Info.isChecksumValid) "Valid (Modulo-10 ✓)" else "Invalid Check Digit ⚠️"
+                }
+            }
+
+            val title = if (gs1Info != null) {
+                "${gs1Info.flagEmoji} ${gs1Info.countryOrType} ($format)"
+            } else {
+                "Barcode ($format)"
+            }
+
             return QrCodeData(
                 rawContent = trimmed,
                 type = QrType.BARCODE,
-                title = "Barcode ($format)",
-                displayDetails = mapOf("Code" to trimmed, "Symbology" to format),
+                title = title,
+                displayDetails = details,
                 format = format,
-                isSecure = true
+                isSecure = gs1Info?.isChecksumValid != false,
+                securityWarning = if (gs1Info?.isChecksumValid == false) "Checksum Modulo-10 barcode ini tidak valid atau barcode rusak." else null
             )
         }
 
@@ -81,6 +100,11 @@ object QrCodeParser {
             trimmed.contains("paypal.me", ignoreCase = true)
         ) {
             return parsePayment(trimmed, format)
+        }
+
+        // WhatsApp Chat: https://wa.me/... or https://api.whatsapp.com/send...
+        if (trimmed.contains("wa.me/", ignoreCase = true) || trimmed.contains("api.whatsapp.com/send", ignoreCase = true)) {
+            return parseWhatsapp(trimmed, format)
         }
 
         // 9. Website URL or Social Links
@@ -169,6 +193,9 @@ object QrCodeParser {
         var phone = ""
         var email = ""
         var org = ""
+        var jobTitle = ""
+        var website = ""
+        var address = ""
 
         val lines = content.lines()
         for (line in lines) {
@@ -179,6 +206,11 @@ object QrCodeParser {
                 upper.startsWith("TEL:") || upper.startsWith("TEL;") -> phone = line.substringAfter(":").trim()
                 upper.startsWith("EMAIL:") || upper.startsWith("EMAIL;") -> email = line.substringAfter(":").trim()
                 upper.startsWith("ORG:") -> org = line.substring(4).trim()
+                upper.startsWith("TITLE:") -> jobTitle = line.substring(6).trim()
+                upper.startsWith("URL:") -> website = line.substring(4).trim()
+                upper.startsWith("ADR:") || upper.startsWith("ADR;") -> {
+                    address = line.substringAfter(":").replace(";", " ").trim()
+                }
             }
         }
 
@@ -191,6 +223,9 @@ object QrCodeParser {
                     part.startsWith("TEL:") -> phone = part.substring(4)
                     part.startsWith("EMAIL:") -> email = part.substring(6)
                     part.startsWith("ORG:") -> org = part.substring(4)
+                    part.startsWith("TITLE:") -> jobTitle = part.substring(6)
+                    part.startsWith("URL:") -> website = part.substring(4)
+                    part.startsWith("ADR:") -> address = part.substring(4).replace(";", " ").trim()
                 }
             }
         }
@@ -204,6 +239,9 @@ object QrCodeParser {
                 if (phone.isNotEmpty()) put("Phone", phone)
                 if (email.isNotEmpty()) put("Email", email)
                 if (org.isNotEmpty()) put("Organization", org)
+                if (jobTitle.isNotEmpty()) put("Job Title", jobTitle)
+                if (website.isNotEmpty()) put("Website", website)
+                if (address.isNotEmpty()) put("Address", address)
             },
             format = format,
             isSecure = true
@@ -416,6 +454,56 @@ object QrCodeParser {
         } catch (e: Exception) {
             value
         }
+    }
+
+    private fun parseWhatsapp(url: String, format: String): QrCodeData {
+        val safeUrl = if (!url.startsWith("http://", ignoreCase = true) && !url.startsWith("https://", ignoreCase = true)) {
+            "https://$url"
+        } else url
+
+        var phone = ""
+        var message = ""
+
+        try {
+            val query = safeUrl.substringAfter("?", "")
+            val path = safeUrl.substringBefore("?")
+
+            if (path.contains("wa.me/", ignoreCase = true)) {
+                val rawPhone = path.substringAfter("wa.me/").substringBefore("/")
+                phone = rawPhone.filter { it.isDigit() || it == '+' }
+            } else if (query.isNotEmpty()) {
+                query.split("&").forEach { param ->
+                    val key = param.substringBefore("=").lowercase()
+                    val value = decodeUrlComponent(param.substringAfter("=", ""))
+                    if (key == "phone") phone = value.filter { it.isDigit() || it == '+' }
+                }
+            }
+
+            if (query.isNotEmpty()) {
+                query.split("&").forEach { param ->
+                    val key = param.substringBefore("=").lowercase()
+                    val value = decodeUrlComponent(param.substringAfter("=", ""))
+                    if (key == "text") message = value
+                }
+            }
+        } catch (e: Exception) {
+            // fallback
+        }
+
+        val details = mutableMapOf<String, String>()
+        val formattedPhone = if (phone.startsWith("+")) phone else if (phone.isNotEmpty()) "+$phone" else ""
+        if (formattedPhone.isNotEmpty()) details["Phone Number"] = formattedPhone
+        if (message.isNotEmpty()) details["Predefined Message"] = message
+        details["Link"] = safeUrl
+
+        return QrCodeData(
+            rawContent = safeUrl,
+            type = QrType.WHATSAPP,
+            title = if (formattedPhone.isNotEmpty()) "WhatsApp: $formattedPhone" else "WhatsApp Chat",
+            displayDetails = details,
+            format = format,
+            isSecure = true
+        )
     }
 
     private fun isSocialUrl(url: String): Boolean {

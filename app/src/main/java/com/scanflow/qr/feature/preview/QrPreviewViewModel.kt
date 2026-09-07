@@ -10,6 +10,7 @@ import com.scanflow.qr.domain.model.QrCornerStyle
 import com.scanflow.qr.domain.model.QrExportFormat
 import com.scanflow.qr.domain.model.QrPatternStyle
 import com.scanflow.qr.domain.model.QrStyleConfig
+import com.scanflow.qr.domain.model.QrType
 import com.scanflow.qr.domain.model.UserQrCode
 import com.scanflow.qr.domain.repository.QrGeneratorRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,13 +42,46 @@ class QrPreviewViewModel @Inject constructor(
         viewModelScope.launch {
             val qr = qrRepository.getUserQrById(qrId)
             if (qr != null) {
+                val pattern = try {
+                    QrPatternStyle.valueOf(qr.patternStyle.ifEmpty { "SQUARE" })
+                } catch (e: Exception) {
+                    QrPatternStyle.SQUARE
+                }
+                val eye = try {
+                    QrCornerStyle.valueOf(qr.eyeStyle.ifEmpty { "SQUARE" })
+                } catch (e: Exception) {
+                    QrCornerStyle.SQUARE
+                }
+
+                val savedLogoBitmap = qr.logoPath?.let { path ->
+                    try {
+                        val f = java.io.File(path)
+                        if (f.exists()) {
+                            android.graphics.BitmapFactory.decodeFile(f.absolutePath)
+                        } else null
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+
                 val config = QrStyleConfig(
                     foregroundColor = qr.foregroundColor,
                     backgroundColor = qr.backgroundColor,
-                    patternStyle = QrPatternStyle.valueOf(qr.patternStyle.ifEmpty { "SQUARE" }),
-                    cornerEyeStyle = QrCornerStyle.valueOf(qr.eyeStyle.ifEmpty { "SQUARE" })
+                    patternStyle = pattern,
+                    cornerEyeStyle = eye,
+                    logoBitmap = savedLogoBitmap,
+                    logoPath = qr.logoPath
                 )
-                val bitmap = QrCodeGenerator.generateQrBitmap(qr.content, config)
+                val bitmap = if (qr.type == QrType.BARCODE) {
+                    qrRepository.generateBarcodeBitmap(
+                        content = qr.content,
+                        formatName = qr.patternStyle.ifEmpty { "CODE_128" },
+                        foregroundColor = qr.foregroundColor,
+                        backgroundColor = qr.backgroundColor
+                    )
+                } else {
+                    QrCodeGenerator.generateQrBitmap(qr.content, config)
+                }
                 _uiState.value = QrPreviewUiState(
                     qrCode = qr,
                     styleConfig = config,
@@ -89,12 +123,87 @@ class QrPreviewViewModel @Inject constructor(
     }
 
     private fun applyNewConfig(newConfig: QrStyleConfig) {
-        val content = _uiState.value.qrCode?.content ?: return
-        val bitmap = QrCodeGenerator.generateQrBitmap(content, newConfig)
+        val currentQr = _uiState.value.qrCode ?: return
+        val isBarcode = currentQr.type == QrType.BARCODE
+        val bitmap = if (isBarcode) {
+            qrRepository.generateBarcodeBitmap(
+                content = currentQr.content,
+                formatName = currentQr.patternStyle.ifEmpty { "CODE_128" },
+                foregroundColor = newConfig.foregroundColor,
+                backgroundColor = newConfig.backgroundColor
+            )
+        } else {
+            QrCodeGenerator.generateQrBitmap(currentQr.content, newConfig)
+        }
+        val updatedQr = currentQr.copy(
+            foregroundColor = newConfig.foregroundColor,
+            backgroundColor = newConfig.backgroundColor,
+            patternStyle = if (isBarcode) currentQr.patternStyle else newConfig.patternStyle.name,
+            eyeStyle = if (isBarcode) currentQr.eyeStyle else newConfig.cornerEyeStyle.name,
+            logoPath = newConfig.logoPath,
+            updatedAt = System.currentTimeMillis()
+        )
         _uiState.value = _uiState.value.copy(
+            qrCode = updatedQr,
             styleConfig = newConfig,
             previewBitmap = bitmap
         )
+        viewModelScope.launch {
+            qrRepository.updateUserQr(updatedQr)
+        }
+    }
+
+    fun setCustomLogo(context: Context, uri: android.net.Uri) {
+        viewModelScope.launch {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val originalBitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                inputStream?.close()
+
+                if (originalBitmap != null) {
+                    val maxDim = 300
+                    val width = originalBitmap.width
+                    val height = originalBitmap.height
+                    val ratio = width.toFloat() / height.toFloat()
+                    val newW = if (ratio >= 1) maxDim else (maxDim * ratio).toInt()
+                    val newH = if (ratio >= 1) (maxDim / ratio).toInt() else maxDim
+                    val scaled = Bitmap.createScaledBitmap(originalBitmap, newW, newH, true)
+
+                    val logoDir = java.io.File(context.filesDir, "qr_logos")
+                    if (!logoDir.exists()) logoDir.mkdirs()
+                    val currentQr = _uiState.value.qrCode
+                    val qrId = currentQr?.id ?: System.currentTimeMillis()
+                    val logoFile = java.io.File(logoDir, "logo_${qrId}.png")
+                    val out = java.io.FileOutputStream(logoFile)
+                    scaled.compress(Bitmap.CompressFormat.PNG, 100, out)
+                    out.flush()
+                    out.close()
+
+                    val newConfig = _uiState.value.styleConfig.copy(
+                        logoBitmap = scaled,
+                        logoPath = logoFile.absolutePath
+                    )
+                    applyNewConfig(newConfig)
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(errorMessage = "Gagal memuat logo: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    fun removeCustomLogo() {
+        val currentQr = _uiState.value.qrCode ?: return
+        currentQr.logoPath?.let { path ->
+            try {
+                val f = java.io.File(path)
+                if (f.exists()) f.delete()
+            } catch (_: Exception) {}
+        }
+        val newConfig = _uiState.value.styleConfig.copy(
+            logoBitmap = null,
+            logoPath = null
+        )
+        applyNewConfig(newConfig)
     }
 
     /**
@@ -124,7 +233,16 @@ class QrPreviewViewModel @Inject constructor(
                 }
 
                 QrExportFormat.SVG -> {
-                    val svgString = qrRepository.generateQrSvg(qr.content, config)
+                    val svgString = if (qr.type == QrType.BARCODE) {
+                        qrRepository.generateBarcodeSvg(
+                            content = qr.content,
+                            formatName = qr.patternStyle.ifEmpty { "CODE_128" },
+                            foregroundColor = config.foregroundColor,
+                            backgroundColor = config.backgroundColor
+                        )
+                    } else {
+                        qrRepository.generateQrSvg(qr.content, config)
+                    }
                     if (svgString != null) {
                         val uri = qrRepository.exportQrSvg(svgString, "ScanFlow_Vector_${qr.id}")
                         if (uri != null) {
@@ -181,7 +299,16 @@ class QrPreviewViewModel @Inject constructor(
                 }
 
                 QrExportFormat.SVG -> {
-                    val svgString = qrRepository.generateQrSvg(qr.content, config)
+                    val svgString = if (qr.type == QrType.BARCODE) {
+                        qrRepository.generateBarcodeSvg(
+                            content = qr.content,
+                            formatName = qr.patternStyle.ifEmpty { "CODE_128" },
+                            foregroundColor = config.foregroundColor,
+                            backgroundColor = config.backgroundColor
+                        )
+                    } else {
+                        qrRepository.generateQrSvg(qr.content, config)
+                    }
                     if (svgString != null) {
                         val uri = qrRepository.cacheQrSvgForSharing(svgString, "shared_vector_${qr.id}.svg")
                         if (uri != null) {
@@ -216,5 +343,21 @@ class QrPreviewViewModel @Inject constructor(
             qrRepository.toggleFavorite(qr.id, newFav)
             _uiState.value = _uiState.value.copy(qrCode = qr.copy(isFavorite = newFav))
         }
+    }
+
+    /**
+     * Mencetak kode QR atau Barcode langsung ke printer nirkabel (Wi-Fi, Bluetooth, Mopria).
+     */
+    fun printQr(context: Context) {
+        val qr = _uiState.value.qrCode ?: return
+        val bitmap = _uiState.value.previewBitmap ?: return
+        com.scanflow.qr.core.utils.AppPrintHelper.printQrBitmap(
+            context = context,
+            jobName = qr.title.ifEmpty { "ScanFlow_${qr.id}" },
+            bitmap = bitmap,
+            title = qr.title,
+            subtitle = if (qr.type == QrType.BARCODE) "Barcode (${qr.patternStyle})" else qr.type.displayName,
+            content = qr.content
+        )
     }
 }

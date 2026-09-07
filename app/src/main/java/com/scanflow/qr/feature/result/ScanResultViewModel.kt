@@ -1,6 +1,7 @@
 package com.scanflow.qr.feature.result
 
 import android.content.Context
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scanflow.qr.core.security.UrlSecurityChecker
@@ -20,12 +21,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+import com.scanflow.qr.core.utils.WifiConnectionStatus
+import com.scanflow.qr.core.utils.WifiConnector
+
 data class ScanResultUiState(
     val scanItem: ScanHistoryItem? = null,
     val parsedData: QrCodeData? = null,
     val securityAssessment: SecurityAssessment? = null,
     val isLoading: Boolean = true,
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
+    val wifiConnectionStatus: WifiConnectionStatus = WifiConnectionStatus.IDLE,
+    val wifiConnectionMessage: String? = null
 )
 
 @HiltViewModel
@@ -107,7 +113,9 @@ class ScanResultViewModel @Inject constructor(
                 val phone = parsed.displayDetails["Phone"] ?: ""
                 val email = parsed.displayDetails["Email"] ?: ""
                 val org = parsed.displayDetails["Organization"] ?: ""
-                IntentHelper.saveContact(context, name, phone, email, org)
+                val jobTitle = parsed.displayDetails["Job Title"] ?: ""
+                val address = parsed.displayDetails["Address"] ?: ""
+                IntentHelper.saveContact(context, name, phone, email, org, jobTitle, address)
             }
             QrType.CALENDAR -> {
                 val title = parsed.displayDetails["Event Title"] ?: parsed.title
@@ -118,9 +126,86 @@ class ScanResultViewModel @Inject constructor(
             QrType.PAYMENT -> {
                 IntentHelper.openPayment(context, parsed.rawContent)
             }
-            QrType.WIFI -> IntentHelper.openWifiSettings(context)
+            QrType.WIFI -> {
+                connectWifi(context)
+            }
+            QrType.BARCODE -> {
+                searchProductGoogle(context, parsed.rawContent)
+            }
+            QrType.WHATSAPP -> {
+                IntentHelper.openUrl(context, parsed.rawContent)
+            }
             else -> ShareHelper.copyToClipboard(context, parsed.rawContent)
         }
+    }
+
+    fun searchProductGoogle(context: Context, query: String = _uiState.value.parsedData?.rawContent.orEmpty()) {
+        if (query.isNotBlank()) {
+            IntentHelper.searchProductGoogle(context, query)
+        }
+    }
+
+    fun searchProductBarcodeLookup(context: Context, query: String = _uiState.value.parsedData?.rawContent.orEmpty()) {
+        if (query.isNotBlank()) {
+            IntentHelper.searchProductBarcodeLookup(context, query)
+        }
+    }
+
+    fun searchProductOpenFoodFacts(context: Context, query: String = _uiState.value.parsedData?.rawContent.orEmpty()) {
+        if (query.isNotBlank()) {
+            IntentHelper.searchOpenFoodFacts(context, query)
+        }
+    }
+
+    fun copyPartialContent(context: Context, label: String, value: String) {
+        ShareHelper.copyToClipboard(context, value)
+        Toast.makeText(context, "$label disalin ke papan klip", Toast.LENGTH_SHORT).show()
+    }
+
+    fun connectWifi(context: Context) {
+        val parsed = _uiState.value.parsedData ?: return
+        val ssid = parsed.displayDetails["Network (SSID)"] ?: ""
+        val password = parsed.displayDetails["Password"]
+        val security = parsed.displayDetails["Security"] ?: "WPA"
+        val isHidden = parsed.displayDetails["Hidden Network"]?.equals("Yes", ignoreCase = true) ?: false
+
+        if (ssid.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                wifiConnectionStatus = WifiConnectionStatus.FAILED,
+                wifiConnectionMessage = "Nama jaringan Wi-Fi (SSID) kosong."
+            )
+            return
+        }
+
+        // Salin password ke clipboard sebagai cadangan bantuan untuk pengguna
+        if (!password.isNullOrEmpty()) {
+            ShareHelper.copyToClipboard(context, password)
+        }
+
+        WifiConnector.connectToWifi(
+            context = context,
+            ssid = ssid,
+            password = password,
+            securityType = security,
+            isHidden = isHidden
+        ) { status, message ->
+            _uiState.value = _uiState.value.copy(
+                wifiConnectionStatus = status,
+                wifiConnectionMessage = message
+            )
+            if (status == WifiConnectionStatus.CONNECTED || status == WifiConnectionStatus.FAILED) {
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun openWifiSettings(context: Context) {
+        IntentHelper.openWifiSettings(context)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        WifiConnector.cancelCurrentConnection()
     }
 
     fun copyContent(context: Context) {
@@ -131,5 +216,43 @@ class ScanResultViewModel @Inject constructor(
     fun shareContent(context: Context) {
         val parsed = _uiState.value.parsedData ?: return
         ShareHelper.shareText(context, parsed.rawContent, "Share Scanned QR Result")
+    }
+
+    /**
+     * Mencetak barcode atau QR code hasil pemindaian langsung ke printer sistem.
+     */
+    fun printScanResult(context: Context) {
+        val item = _uiState.value.scanItem ?: return
+        val parsed = _uiState.value.parsedData
+        val is1DBarcode = parsed?.type == QrType.BARCODE || item.format in listOf("EAN_13", "EAN_8", "UPC_A", "UPC_E", "CODE_128", "CODE_39", "CODE_93", "ITF", "CODABAR")
+
+        val bitmap = if (is1DBarcode) {
+            com.scanflow.qr.core.utils.QrCodeGenerator.generateBarcodeBitmap(
+                content = item.content,
+                formatName = item.format.ifEmpty { "CODE_128" }
+            ) ?: com.scanflow.qr.core.utils.QrCodeGenerator.generateQrBitmap(
+                content = item.content,
+                config = com.scanflow.qr.domain.model.QrStyleConfig()
+            )
+        } else {
+            com.scanflow.qr.core.utils.QrCodeGenerator.generateQrBitmap(
+                content = item.content,
+                config = com.scanflow.qr.domain.model.QrStyleConfig()
+            )
+        }
+
+        if (bitmap == null) {
+            Toast.makeText(context, "Gagal memproses kode untuk dicetak", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        com.scanflow.qr.core.utils.AppPrintHelper.printQrBitmap(
+            context = context,
+            jobName = item.title.ifEmpty { "Scan_${item.id}" },
+            bitmap = bitmap,
+            title = item.title.ifEmpty { "Hasil Pemindaian" },
+            subtitle = if (is1DBarcode) "Barcode (${item.format})" else parsed?.type?.displayName ?: item.format,
+            content = item.content
+        )
     }
 }
