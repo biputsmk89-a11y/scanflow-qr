@@ -111,7 +111,8 @@ import kotlinx.coroutines.launch
 fun HistoryScreen(
     viewModel: HistoryViewModel,
     onNavigateToResult: (Long) -> Unit,
-    onNavigateBack: (() -> Unit)? = null
+    onNavigateBack: (() -> Unit)? = null,
+    onScanClick: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -257,7 +258,7 @@ fun HistoryScreen(
                             )
                         }
                     } else {
-                        IconButton(onClick = {}) {
+                        IconButton(onClick = { onScanClick?.invoke() }) {
                             Icon(
                                 imageVector = Icons.Default.QrCodeScanner,
                                 contentDescription = "Scanner",

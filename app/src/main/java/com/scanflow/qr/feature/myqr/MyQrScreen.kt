@@ -30,6 +30,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudDone
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
@@ -43,6 +45,8 @@ import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -332,6 +336,8 @@ fun MyQrScreen(
     var showFilterSortMenu by remember { mutableStateOf(false) }
     var qrToDelete by remember { mutableStateOf<UserQrCode?>(null) }
     var qrToEdit by remember { mutableStateOf<UserQrCode?>(null) }
+    val searchFocusRequester = remember { FocusRequester() }
+    var showVaultStatusDialog by remember { mutableStateOf(false) }
 
     // Filter Chips list matching Stitch
     val filterTypes = listOf(
@@ -380,6 +386,62 @@ fun MyQrScreen(
                 qrToEdit = null
                 scope.launch {
                     snackbarHostState.showSnackbar("QR Code '$newTitle' berhasil diperbarui")
+                }
+            }
+        )
+    }
+
+    // Cloud Vault Status Dialog
+    if (showVaultStatusDialog) {
+        AlertDialog(
+            onDismissRequest = { showVaultStatusDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.CloudDone,
+                    contentDescription = null,
+                    tint = SuccessGreen,
+                    modifier = Modifier.size(36.dp)
+                )
+            },
+            title = { Text("Status Brankas QR", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Semua kode QR Anda tersimpan secara aman dalam brankas lokal berenkripsi tinggi.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "• Total QR Tersimpan: ${uiState.userQrs.size} item",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = "• Urutan Tampilan: ${if (uiState.isSortNewestFirst) "Terbaru Lebih Dulu" else "Terlama Lebih Dulu"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = ElectricBlue
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.toggleSortOrder()
+                        showVaultStatusDialog = false
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                if (uiState.isSortNewestFirst) "Urutan diubah: Terlama lebih dulu" else "Urutan diubah: Terbaru lebih dulu"
+                            )
+                        }
+                    }
+                ) {
+                    Text("Ganti Urutan", color = ElectricBlue, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showVaultStatusDialog = false }) {
+                    Text("Tutup")
                 }
             }
         )
@@ -455,18 +517,24 @@ fun MyQrScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = {
+                        if (uiState.searchQuery.isNotEmpty()) {
+                            viewModel.onSearchQueryChanged("")
+                        } else {
+                            searchFocusRequester.requestFocus()
+                        }
+                    }) {
                         Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = "Cari",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = if (uiState.searchQuery.isNotEmpty()) Icons.Default.Close else Icons.Default.Search,
+                            contentDescription = if (uiState.searchQuery.isNotEmpty()) "Hapus Pencarian" else "Cari",
+                            tint = if (uiState.searchQuery.isNotEmpty()) ElectricBlue else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = { showVaultStatusDialog = true }) {
                         Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Notifikasi",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Default.CloudDone,
+                            contentDescription = "Status Cloud Vault",
+                            tint = SuccessGreen
                         )
                     }
                 },
@@ -655,12 +723,14 @@ fun MyQrScreen(
                     )
                 },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Tune,
-                        contentDescription = "Atur",
-                        tint = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    IconButton(onClick = { viewModel.toggleSortOrder() }) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "Atur Urutan",
+                            tint = if (uiState.isSortNewestFirst) ElectricBlue else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 },
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
@@ -673,6 +743,7 @@ fun MyQrScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    .focusRequester(searchFocusRequester)
             )
 
             Spacer(modifier = Modifier.height(12.dp))

@@ -198,7 +198,8 @@ fun ScanFlowNavGraph(
             CreateQrScreen(
                 viewModel = createQrViewModel,
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) }
+                onNavigateToPreview = { id -> navController.navigate(Screen.QrPreview.createRoute(id)) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
 
@@ -236,7 +237,8 @@ fun ScanFlowNavGraph(
             HistoryScreen(
                 viewModel = historyViewModel,
                 onNavigateToResult = { id: Long -> navController.navigate(Screen.ScanResult.createRoute(id)) },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onScanClick = { navController.navigate(Screen.Scanner.route) }
             )
         }
 

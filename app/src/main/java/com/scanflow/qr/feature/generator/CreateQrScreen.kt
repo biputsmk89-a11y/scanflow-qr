@@ -124,7 +124,8 @@ data class StitchQrCategoryItem(
 fun CreateQrScreen(
     viewModel: CreateQrViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToPreview: (Long) -> Unit
+    onNavigateToPreview: (Long) -> Unit,
+    onNavigateToSettings: (() -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var isFormOpen by remember { mutableStateOf(false) }
@@ -201,12 +202,14 @@ fun CreateQrScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* Settings */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    if (onNavigateToSettings != null) {
+                        IconButton(onClick = onNavigateToSettings) {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

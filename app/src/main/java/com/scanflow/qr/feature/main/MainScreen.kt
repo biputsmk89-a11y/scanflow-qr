@@ -149,7 +149,8 @@ fun MainScreen(
                     CreateQrScreen(
                         viewModel = createQrViewModel,
                         onNavigateBack = { currentTab = BottomNavItem.Home.route },
-                        onNavigateToPreview = onNavigateToPreview
+                        onNavigateToPreview = onNavigateToPreview,
+                        onNavigateToSettings = onNavigateToSettings
                     )
                 }
                 BottomNavItem.Analytics.route -> {
@@ -161,7 +162,8 @@ fun MainScreen(
                 BottomNavItem.History.route -> {
                     HistoryScreen(
                         viewModel = historyViewModel,
-                        onNavigateToResult = onNavigateToResult
+                        onNavigateToResult = onNavigateToResult,
+                        onScanClick = onNavigateToScan
                     )
                 }
                 BottomNavItem.Profile.route -> {
