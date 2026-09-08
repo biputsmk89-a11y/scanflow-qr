@@ -63,6 +63,7 @@ fun MainScreen(
     var currentTab by rememberSaveable { mutableStateOf(BottomNavItem.Home.route) }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
@@ -72,9 +73,7 @@ fun MainScreen(
                     if (item == BottomNavItem.Scan) {
                         // Hero Center Scan Button
                         Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxSize(),
+                            modifier = Modifier.weight(1f),
                             contentAlignment = androidx.compose.ui.Alignment.Center
                         ) {
                             FloatingActionButton(
