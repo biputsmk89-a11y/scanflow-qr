@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'Release Version Name (e.g. 1.1.2)'
+        description: 'Release Version Name (e.g. 1.1.7)'
         required: true
-        default: '1.1.2'
+        default: '1.1.7'
 
 permissions:
   contents: write
@@ -155,12 +155,28 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Pruning older GitHub Actions artifacts to free up storage quota..."
-          gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts[].id' 2>/dev/null | tail -n +5 | while read -r id; do
+          gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts[].id' 2>/dev/null | tail -n +6 | while read -r id; do
             if [ -n "$id" ]; then
               echo "Deleting old artifact ID: $id"
               gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
             fi
           done
+
+      - name: Upload Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanFlow-QR-v${{ steps.version_step.outputs.version }}-APK
+          path: ${{ steps.artifacts_step.outputs.apk_path }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload Release AAB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanFlow-QR-v${{ steps.version_step.outputs.version }}-AAB
+          path: ${{ steps.artifacts_step.outputs.aab_path }}
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Cleanup Keystore
         if: always()
