@@ -3,14 +3,11 @@ package com.scanflow.qr.feature.main
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -71,36 +68,42 @@ fun MainScreen(
             ) {
                 BottomNavItem.items.filterNotNull().forEach { item ->
                     if (item == BottomNavItem.Scan) {
-                        // Hero Center Scan Button
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = androidx.compose.ui.Alignment.Center
-                        ) {
-                            FloatingActionButton(
-                                onClick = onNavigateToScan,
-                                shape = CircleShape,
-                                containerColor = ElectricBlue,
-                                contentColor = Color.White,
-                                elevation = FloatingActionButtonDefaults.elevation(6.dp),
-                                modifier = Modifier
-                                    .offset(y = (-14).dp)
-                                    .size(56.dp)
-                            ) {
+                        // Scan Action Item (integrated within navigation bar bounds)
+                        NavigationBarItem(
+                            selected = false,
+                            onClick = onNavigateToScan,
+                            icon = {
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Brush.linearGradient(listOf(ElectricBlue, CyanAccent))),
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            Brush.linearGradient(listOf(ElectricBlue, CyanAccent))
+                                        ),
                                     contentAlignment = androidx.compose.ui.Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.QrCodeScanner,
-                                        contentDescription = "Scan",
+                                        contentDescription = item.title,
                                         tint = Color.White,
-                                        modifier = Modifier.size(28.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
-                            }
-                        }
+                            },
+                            label = {
+                                Text(
+                                    text = item.title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    color = ElectricBlue
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = Color.Transparent,
+                                unselectedIconColor = ElectricBlue,
+                                unselectedTextColor = ElectricBlue
+                            )
+                        )
                     } else {
                         val isSelected = currentTab == item.route
                         NavigationBarItem(
@@ -155,7 +158,11 @@ fun MainScreen(
                 BottomNavItem.Analytics.route -> {
                     AnalyticsScreen(
                         viewModel = analyticsViewModel,
-                        onNavigateBack = { currentTab = BottomNavItem.Home.route }
+                        onNavigateBack = { currentTab = BottomNavItem.Home.route },
+                        onNavigateToHistory = onNavigateToHistory,
+                        onNavigateToMyQr = onNavigateToMyQr,
+                        onNavigateToScan = onNavigateToScan,
+                        onNavigateToCreate = { currentTab = BottomNavItem.Create.route }
                     )
                 }
                 BottomNavItem.History.route -> {

@@ -72,6 +72,12 @@ class FakeCloudAuthRepository : AuthRepository {
         _currentUser.value = updated
         return Result.success(updated)
     }
+
+    override suspend fun updateAvatar(avatarUri: String?): Result<Unit> {
+        val current = _currentUser.value
+        _currentUser.value = current.copy(avatarUri = avatarUri)
+        return Result.success(Unit)
+    }
 }
 
 class FakeCloudSyncRepository : SyncRepository {
@@ -294,5 +300,57 @@ class CloudAuthAndSyncTest {
 
         assertThat(resultMsg).isNotNull()
         assertThat(resultMsg).contains("Sinkronisasi Berhasil")
+    }
+
+    @Test
+    fun profileViewModel_updateAvatar_updatesUserAvatarSuccessfully() = runTest {
+        val viewModel = ProfileViewModel(
+            authRepository = authRepository,
+            syncRepository = syncRepository
+        )
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        viewModel.updateAvatar("/data/user/0/com.scanflow.qr/files/profile_avatar.jpg")
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.user.avatarUri).isEqualTo("/data/user/0/com.scanflow.qr/files/profile_avatar.jpg")
+        assertThat(viewModel.uiState.value.feedbackMessage).contains("berhasil diperbarui")
+
+        viewModel.updateAvatar(null)
+        advanceUntilIdle()
+
+        assertThat(viewModel.uiState.value.user.avatarUri).isNull()
+        assertThat(viewModel.uiState.value.feedbackMessage).contains("dihapus")
+    }
+
+    @Test
+    fun profileViewModel_privacyToggles_updatePreferencesCorrectly() = runTest {
+        val mockSettingsRepo = com.scanflow.qr.di.FakeSettingsRepository()
+        val viewModel = ProfileViewModel(
+            authRepository = authRepository,
+            syncRepository = syncRepository,
+            settingsRepository = mockSettingsRepo
+        )
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.uiState.collect {}
+        }
+        advanceUntilIdle()
+
+        viewModel.toggleSaveScanHistory(false)
+        advanceUntilIdle()
+        assertThat(mockSettingsRepo.currentSettings.saveScanHistory).isFalse()
+
+        viewModel.toggleSendAnalytics(false)
+        advanceUntilIdle()
+        assertThat(mockSettingsRepo.currentSettings.sendAnonymousAnalytics).isFalse()
+
+        viewModel.toggleClipboardProtection(false)
+        advanceUntilIdle()
+        assertThat(mockSettingsRepo.currentSettings.clipboardProtection).isFalse()
     }
 }

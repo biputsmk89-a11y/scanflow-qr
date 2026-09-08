@@ -38,7 +38,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.ContactPage
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Language
@@ -53,6 +55,7 @@ import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Router
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
@@ -90,6 +93,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,6 +103,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.scanflow.qr.core.designsystem.CyanAccent
 import com.scanflow.qr.core.designsystem.Dimens
 import com.scanflow.qr.core.designsystem.ElectricBlue
@@ -111,12 +116,21 @@ import com.scanflow.qr.core.designsystem.ScanFlowTextField
 import com.scanflow.qr.core.designsystem.SectionHeader
 import com.scanflow.qr.domain.model.QrType
 
-data class StitchQrCategoryItem(
+enum class QrCategoryGroup(val label: String) {
+    ALL("Semua"),
+    BUSINESS("Populer & Bisnis"),
+    COMMUNICATION("Komunikasi"),
+    UTILITY("Utilitas & Event")
+}
+
+data class EnterpriseQrCategoryItem(
     val type: QrType,
     val title: String,
     val subtitle: String,
     val icon: ImageVector,
-    val isPrimaryColor: Boolean = true
+    val tag: String,
+    val group: QrCategoryGroup,
+    val accentColor: Color = ElectricBlue
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -129,6 +143,8 @@ fun CreateQrScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var isFormOpen by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedGroup by remember { mutableStateOf(QrCategoryGroup.ALL) }
     val context = LocalContext.current
 
     val contactPickerLauncher = rememberLauncherForActivityResult(
@@ -151,38 +167,72 @@ fun CreateQrScreen(
 
     val categories = remember {
         listOf(
-            StitchQrCategoryItem(QrType.WEBSITE, "Website", "URL / Web Link", Icons.Default.Language, true),
-            StitchQrCategoryItem(QrType.WHATSAPP, "WhatsApp", "Chat & Auto-Text", Icons.Default.Sms, true),
-            StitchQrCategoryItem(QrType.TEXT, "Text", "Plain Text / Notes", Icons.Default.Notes, false),
-            StitchQrCategoryItem(QrType.WIFI, "WiFi", "Network Credentials", Icons.Default.Wifi, true),
-            StitchQrCategoryItem(QrType.BARCODE, "Barcode", "1D Code 128 / EAN / UPC", Icons.Default.ViewWeek, true),
-            StitchQrCategoryItem(QrType.CONTACT, "Contact", "vCard Profile", Icons.Default.ContactPage, false),
-            StitchQrCategoryItem(QrType.EMAIL, "Email", "Send Mail", Icons.Default.Email, true),
-            StitchQrCategoryItem(QrType.PHONE, "Phone", "Direct Dial", Icons.Default.Call, false),
-            StitchQrCategoryItem(QrType.SMS, "SMS", "Text Message", Icons.Default.Sms, true),
-            StitchQrCategoryItem(QrType.LOCATION, "Location", "Geo Coordinates", Icons.Default.LocationOn, false),
-            StitchQrCategoryItem(QrType.PAYMENT, "Payment", "Crypto / UPI / PayPal", Icons.Default.Payments, true),
-            StitchQrCategoryItem(QrType.SOCIAL, "Social Media", "Instagram, X, etc.", Icons.Default.Share, false)
+            EnterpriseQrCategoryItem(QrType.WEBSITE, "Website URL", "Tautan web & domain", Icons.Default.Language, "HTTPS", QrCategoryGroup.BUSINESS, ElectricBlue),
+            EnterpriseQrCategoryItem(QrType.WHATSAPP, "WhatsApp", "Chat langsung & template", Icons.Default.Sms, "Direct Chat", QrCategoryGroup.BUSINESS, Color(0xFF25D366)),
+            EnterpriseQrCategoryItem(QrType.BARCODE, "Barcode 1D", "Code 128 / EAN / UPC ritel", Icons.Default.ViewWeek, "1D Ritel", QrCategoryGroup.BUSINESS, ElectricBlue),
+            EnterpriseQrCategoryItem(QrType.PAYMENT, "Pembayaran", "UPI, Kripto & PayPal", Icons.Default.Payments, "UPI/Crypto", QrCategoryGroup.BUSINESS, CyanAccent),
+            EnterpriseQrCategoryItem(QrType.WIFI, "Jaringan Wi-Fi", "Kredensial akses cepat", Icons.Default.Wifi, "WPA3/WPA2", QrCategoryGroup.UTILITY, CyanAccent),
+            EnterpriseQrCategoryItem(QrType.CONTACT, "Kontak Bisnis", "Profil digital vCard 3.0", Icons.Default.ContactPage, "vCard 3.0", QrCategoryGroup.COMMUNICATION, ElectricBlue),
+            EnterpriseQrCategoryItem(QrType.CALENDAR, "Kalender & Acara", "Jadwal event & pengingat", Icons.Default.CalendarToday, "iCal/Event", QrCategoryGroup.UTILITY, CyanAccent),
+            EnterpriseQrCategoryItem(QrType.EMAIL, "Email", "Kirim surat elektronik", Icons.Default.Email, "Mailto", QrCategoryGroup.COMMUNICATION, ElectricBlue),
+            EnterpriseQrCategoryItem(QrType.PHONE, "Panggilan Telepon", "Panggilan nomor seluler", Icons.Default.Call, "Direct Dial", QrCategoryGroup.COMMUNICATION, Color(0xFF25D366)),
+            EnterpriseQrCategoryItem(QrType.SMS, "SMS Seluler", "Kirim pesan teks SMS", Icons.Default.Sms, "Cellular", QrCategoryGroup.COMMUNICATION, ElectricBlue),
+            EnterpriseQrCategoryItem(QrType.LOCATION, "Lokasi Geo", "Koordinat GPS & peta", Icons.Default.LocationOn, "GeoPoint", QrCategoryGroup.UTILITY, CyanAccent),
+            EnterpriseQrCategoryItem(QrType.SOCIAL, "Media Sosial", "Profil IG, TikTok, X, dll", Icons.Default.Share, "Social Link", QrCategoryGroup.COMMUNICATION, ElectricBlue),
+            EnterpriseQrCategoryItem(QrType.TEXT, "Teks Bebas", "Catatan & data mentah", Icons.Default.Notes, "Plain Text", QrCategoryGroup.UTILITY, Color(0xFF9E9E9E))
         )
+    }
+
+    val filteredCategories = remember(categories, searchQuery, selectedGroup) {
+        categories.filter { cat ->
+            val matchesGroup = selectedGroup == QrCategoryGroup.ALL || cat.group == selectedGroup
+            val matchesQuery = searchQuery.isBlank() ||
+                cat.title.contains(searchQuery, ignoreCase = true) ||
+                cat.subtitle.contains(searchQuery, ignoreCase = true) ||
+                cat.tag.contains(searchQuery, ignoreCase = true) ||
+                cat.type.name.contains(searchQuery, ignoreCase = true)
+            matchesGroup && matchesQuery
+        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = if (isFormOpen) {
-                            when (uiState.selectedType) {
-                                QrType.WIFI -> "Create WiFi QR"
-                                QrType.WHATSAPP -> "Create WhatsApp QR"
-                                QrType.PAYMENT -> "ScanFlow QR"
-                                QrType.CONTACT -> "Create Contact QR"
-                                else -> uiState.selectedType.displayName
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = if (isFormOpen) {
+                                when (uiState.selectedType) {
+                                    QrType.WIFI -> "Buat QR Wi-Fi"
+                                    QrType.WHATSAPP -> "Buat QR WhatsApp"
+                                    QrType.PAYMENT -> "Buat QR Pembayaran"
+                                    QrType.CONTACT -> "Buat QR Kontak"
+                                    QrType.CALENDAR -> "Buat QR Acara Kalender"
+                                    QrType.BARCODE -> "Buat Barcode 1D Ritel"
+                                    else -> uiState.selectedType.displayName
+                                }
+                            } else "ScanFlow QR",
+                            fontWeight = FontWeight.Bold,
+                            color = ElectricBlue
+                        )
+                        if (!isFormOpen) {
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = ElectricBlue.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = "STUDIO",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                    fontWeight = FontWeight.Bold,
+                                    color = ElectricBlue,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
                             }
-                        } else "ScanFlow QR",
-                        fontWeight = FontWeight.Bold,
-                        color = ElectricBlue
-                    )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(
@@ -226,52 +276,174 @@ fun CreateQrScreen(
             modifier = Modifier.padding(padding)
         ) { formActive ->
             if (!formActive) {
-                // Stitch QR Creator Menu (Bento Grid of Content Types)
+                // Enterprise QR Creator Hub
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = Dimens.Spacing20)
                 ) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
                     Text(
-                        text = "Create QR Code",
-                        style = MaterialTheme.typography.headlineLarge,
+                        text = "Buat Kode QR & Barcode",
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Select a content type to generate a new QR code.",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "Pilih format konten berstandar enterprise untuk bisnis, ritel, & utilitas.",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.height(Dimens.Spacing24))
+                    Spacer(modifier = Modifier.height(14.dp))
 
-                    Text(
-                        text = "Content Types",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                    // Enterprise Search Bar
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(
+                                text = "Cari format QR / Barcode...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = "Search",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { searchQuery = "" }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "Clear",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ElectricBlue,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        )
                     )
-                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
 
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                        contentPadding = PaddingValues(bottom = 100.dp),
-                        modifier = Modifier.fillMaxSize()
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Category Filter Tabs
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(categories) { cat ->
-                            StitchBentoTypeCard(
-                                item = cat,
+                        QrCategoryGroup.entries.forEach { group ->
+                            val isSelected = selectedGroup == group
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isSelected) ElectricBlue else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isSelected) ElectricBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+                                ),
+                                modifier = Modifier.clickable { selectedGroup = group }
+                            ) {
+                                Text(
+                                    text = group.label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Pilihan Format",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${filteredCategories.size} format aktif",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (filteredCategories.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 40.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Format tidak ditemukan",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Coba kata kunci lain atau reset filter kategori.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            ScanFlowSecondaryButton(
+                                text = "Reset Filter",
                                 onClick = {
-                                    viewModel.selectType(cat.type)
-                                    isFormOpen = true
+                                    searchQuery = ""
+                                    selectedGroup = QrCategoryGroup.ALL
                                 }
                             )
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            contentPadding = PaddingValues(bottom = 150.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(filteredCategories) { cat ->
+                                EnterpriseBentoTypeCard(
+                                    item = cat,
+                                    onClick = {
+                                        viewModel.selectType(cat.type)
+                                        isFormOpen = true
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -814,6 +986,77 @@ fun CreateQrScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
+                                QrType.CALENDAR -> {
+                                    Text(
+                                        text = "Informasi Acara (iCalendar / vEvent)",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing8))
+                                    ScanFlowTextField(
+                                        value = uiState.calendarTitle,
+                                        onValueChange = { viewModel.updateField { copy(calendarTitle = it) } },
+                                        label = "Judul Acara / Kegiatan (Wajib)",
+                                        placeholder = "Contoh: Rapat Koordinasi Tim ScanFlow",
+                                        leadingIcon = Icons.Default.CalendarToday,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                    ScanFlowTextField(
+                                        value = uiState.calendarLocation,
+                                        onValueChange = { viewModel.updateField { copy(calendarLocation = it) } },
+                                        label = "Lokasi Acara",
+                                        placeholder = "Contoh: Auditorium Utama / Online Zoom",
+                                        leadingIcon = Icons.Default.LocationOn,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                    ScanFlowTextField(
+                                        value = uiState.calendarDate,
+                                        onValueChange = { viewModel.updateField { copy(calendarDate = it) } },
+                                        label = "Waktu Mulai (DTSTART)",
+                                        placeholder = "Contoh: 20261015T090000 atau 2026-10-15 09:00",
+                                        leadingIcon = Icons.Default.CalendarToday,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                    ScanFlowTextField(
+                                        value = uiState.calendarDescription,
+                                        onValueChange = { viewModel.updateField { copy(calendarDescription = it) } },
+                                        label = "Deskripsi / Agenda Acara",
+                                        placeholder = "Tuliskan rincian agenda, catatan atau kontak panitia...",
+                                        singleLine = false,
+                                        maxLines = 4,
+                                        leadingIcon = Icons.Default.Notes,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    Spacer(modifier = Modifier.height(Dimens.Spacing12))
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.CalendarToday,
+                                                contentDescription = null,
+                                                tint = CyanAccent,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Text(
+                                                text = "Standar vEvent terintegrasi langsung dengan Google Calendar, Microsoft Outlook, dan iOS Calendar.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
                                 else -> {}
                             }
                         }
@@ -844,7 +1087,7 @@ fun CreateQrScreen(
                         gradient = true
                     )
 
-                    Spacer(modifier = Modifier.height(100.dp))
+                    Spacer(modifier = Modifier.height(140.dp))
                 }
             }
         }
@@ -1099,7 +1342,7 @@ private fun StitchWifiGeneratorView(
             }
         }
 
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(140.dp))
     }
 }
 
@@ -1306,68 +1549,96 @@ private fun StitchPaymentGeneratorView(
             }
         }
 
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(140.dp))
     }
 }
 
 /**
- * Stitch Bento Grid Card for Content Types
+ * Enterprise Bento Grid Card for Content Types
+ * High-performance enterprise card with:
+ * - Rounded 18dp squircle
+ * - High-contrast subtle border
+ * - Accent-tinted icon container (42dp)
+ * - Enterprise capability pill tag (e.g., "HTTPS", "WPA3", "vCard 3.0", "1D Ritel")
+ * - Crisp title and 1-line subtitle
  */
 @Composable
-private fun StitchBentoTypeCard(
-    item: StitchQrCategoryItem,
+private fun EnterpriseBentoTypeCard(
+    item: EnterpriseQrCategoryItem,
     onClick: () -> Unit
 ) {
-    val iconColor = if (item.isPrimaryColor) ElectricBlue else CyanAccent
-    val bgTint = if (item.isPrimaryColor) ElectricBlue.copy(alpha = 0.12f) else CyanAccent.copy(alpha = 0.15f)
-
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp, pressedElevation = 4.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .shadow(elevation = 3.dp, shape = RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 20.dp, horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(14.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(CircleShape)
-                    .background(bgTint),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = item.title,
-                    tint = iconColor,
-                    modifier = Modifier.size(28.dp)
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(item.accentColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.title,
+                        tint = item.accentColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = item.accentColor.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = item.tag,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = item.accentColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Column {
+                Text(
+                    text = item.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = item.subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = item.subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
         }
     }
 }
@@ -1561,7 +1832,7 @@ private fun StitchContactGeneratorView(
             }
         }
 
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(140.dp))
     }
 }
 

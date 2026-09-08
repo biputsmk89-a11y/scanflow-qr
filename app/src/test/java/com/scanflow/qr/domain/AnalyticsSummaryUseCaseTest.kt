@@ -34,6 +34,7 @@ class AnalyticsSummaryUseCaseTest {
         assertThat(summary.totalFavorites).isEqualTo(0)
         assertThat(summary.topScanType).isEqualTo(QrType.WEBSITE)
         assertThat(summary.scansByType).isEmpty()
+        assertThat(summary.topLocations).isEmpty()
     }
 
     @Test

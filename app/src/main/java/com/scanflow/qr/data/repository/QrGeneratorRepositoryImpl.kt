@@ -263,6 +263,10 @@ class LocalGuestAuthRepository : AuthRepository {
     override suspend fun updateProfile(name: String, email: String): Result<AuthUser> {
         return Result.success(guestUser.copy(displayName = name, email = email, isGuest = false))
     }
+
+    override suspend fun updateAvatar(avatarUri: String?): Result<Unit> {
+        return Result.success(Unit)
+    }
 }
 
 class LocalSyncRepository : SyncRepository {

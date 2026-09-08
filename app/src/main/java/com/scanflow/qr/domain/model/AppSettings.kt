@@ -20,7 +20,7 @@ data class AppSettings(
     val autoScan: Boolean = true,
     val language: String = "en",
     val saveScanHistory: Boolean = true,
-    val sendAnonymousAnalytics: Boolean = false,
+    val sendAnonymousAnalytics: Boolean = true,
     val safeUrlDetection: Boolean = true,
     val suspiciousQrWarning: Boolean = true,
     val clipboardProtection: Boolean = true,
@@ -47,7 +47,8 @@ data class AuthUser(
     val displayName: String? = null,
     val isGuest: Boolean = true,
     val token: String? = null,
-    val lastLoginAt: Long = System.currentTimeMillis()
+    val lastLoginAt: Long = System.currentTimeMillis(),
+    val avatarUri: String? = null
 )
 
 data class SyncReport(

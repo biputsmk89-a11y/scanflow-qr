@@ -42,7 +42,10 @@ data class ProfileUiState(
     val currentLanguage: String = "en",
     val currentTheme: AppThemeMode = AppThemeMode.DARK,
     val totalScans: Int = 0,
-    val totalQrs: Int = 0
+    val totalQrs: Int = 0,
+    val saveScanHistory: Boolean = true,
+    val sendAnonymousAnalytics: Boolean = true,
+    val clipboardProtection: Boolean = true
 )
 
 @HiltViewModel
@@ -113,7 +116,10 @@ class ProfileViewModel @Inject constructor(
             currentLanguage = settings.language,
             currentTheme = settings.themeMode,
             totalScans = historyList.size,
-            totalQrs = qrList.size
+            totalQrs = qrList.size,
+            saveScanHistory = settings.saveScanHistory,
+            sendAnonymousAnalytics = settings.sendAnonymousAnalytics,
+            clipboardProtection = settings.clipboardProtection
         )
     }.stateIn(
         scope = viewModelScope,
@@ -125,6 +131,34 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.updateProfile(name, email)
             _feedbackMessage.value = "Profil berhasil diperbarui"
+        }
+    }
+
+    fun updateAvatar(uri: String?) {
+        viewModelScope.launch {
+            authRepository.updateAvatar(uri)
+            _feedbackMessage.value = if (uri != null) "Foto profil berhasil diperbarui" else "Foto profil dihapus"
+        }
+    }
+
+    fun toggleSaveScanHistory(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository?.updateSaveScanHistory(enabled)
+            _feedbackMessage.value = if (enabled) "Penyimpanan riwayat diaktifkan" else "Penyimpanan riwayat dinonaktifkan"
+        }
+    }
+
+    fun toggleSendAnalytics(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository?.updateSendAnonymousAnalytics(enabled)
+            _feedbackMessage.value = if (enabled) "Analitik anonim diaktifkan" else "Analitik anonim dinonaktifkan"
+        }
+    }
+
+    fun toggleClipboardProtection(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository?.updateClipboardProtection(enabled)
+            _feedbackMessage.value = if (enabled) "Proteksi clipboard diaktifkan" else "Proteksi clipboard dinonaktifkan"
         }
     }
 

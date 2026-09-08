@@ -309,7 +309,11 @@ fun ScanFlowNavGraph(
             val vm: AnalyticsViewModel = analyticsViewModel ?: hiltViewModel()
             AnalyticsScreen(
                 viewModel = vm,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHistory = { navController.navigate(Screen.History.route) },
+                onNavigateToMyQr = { navController.navigate(Screen.MyQr.route) },
+                onNavigateToScan = { navController.navigate(Screen.Scanner.route) },
+                onNavigateToCreate = { navController.navigate(Screen.CreateQr.route) }
             )
         }
 

@@ -84,11 +84,10 @@ fun ScanFlowQRTheme(
     }
     val view = LocalView.current
     if (!view.isInEditMode) {
-        SideEffect {
+        val window = (view.context.findActivity())?.window
+        androidx.compose.runtime.DisposableEffect(darkTheme, colorScheme) {
             try {
-                val activity = view.context.findActivity()
-                val window = activity?.window
-                if (window != null && !activity.isFinishing && !activity.isDestroyed) {
+                if (window != null) {
                     window.statusBarColor = colorScheme.background.toArgb()
                     window.navigationBarColor = colorScheme.background.toArgb()
                     val insetsController = WindowCompat.getInsetsController(window, view)
@@ -99,6 +98,7 @@ fun ScanFlowQRTheme(
                 // Safeguard against any internal NullPointerException on custom ROMs (MIUI / HyperOS)
                 t.printStackTrace()
             }
+            onDispose { }
         }
     }
 

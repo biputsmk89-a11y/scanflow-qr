@@ -24,15 +24,28 @@ object LocaleHelper {
         val targetLocale = Locale(langCode)
         Locale.setDefault(targetLocale)
 
+        val res = context.resources
+        val config = Configuration(res.configuration)
+        val currentLang = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            config.locales.get(0)?.language
+        } else {
+            @Suppress("DEPRECATION")
+            config.locale?.language
+        }
+
+        if (currentLang == langCode) {
+            return context
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             try {
                 val localeManager = context.getSystemService(Context.LOCALE_SERVICE) as? LocaleManager
-                localeManager?.applicationLocales = LocaleList.forLanguageTags(langCode)
+                if (localeManager?.applicationLocales?.toLanguageTags() != langCode) {
+                    localeManager?.applicationLocales = LocaleList.forLanguageTags(langCode)
+                }
             } catch (_: Exception) {}
         }
 
-        val res = context.resources
-        val config = Configuration(res.configuration)
         config.setLocale(targetLocale)
         @Suppress("DEPRECATION")
         res.updateConfiguration(config, res.displayMetrics)

@@ -361,11 +361,7 @@ class GetAnalyticsSummaryUseCase(
                         )
                     }
             } else {
-                listOf(
-                    com.scanflow.qr.domain.model.LocationStats(1, "Belum ada riwayat", 0),
-                    com.scanflow.qr.domain.model.LocationStats(2, "-", 0),
-                    com.scanflow.qr.domain.model.LocationStats(3, "-", 0)
-                )
+                emptyList()
             }
 
             // 4. Hourly Breakdown

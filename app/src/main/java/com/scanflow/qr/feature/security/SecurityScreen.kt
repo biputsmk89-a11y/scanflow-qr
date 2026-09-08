@@ -477,217 +477,226 @@ fun SecurityScreen(
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                 shadowElevation = 2.dp
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Icon(
-                                imageVector = if (isBiometricSupported) Icons.Default.Fingerprint else Icons.Default.Lock,
-                                contentDescription = if (isBiometricSupported) "Biometric Lock" else "App Lock",
-                                tint = if (isBiometricSupported) MaterialTheme.colorScheme.onSurfaceVariant else ElectricBlue,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(42.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isBiometricSupported) Icons.Default.Fingerprint else Icons.Default.Lock,
+                                    contentDescription = if (isBiometricSupported) "Biometric Lock" else "App Lock",
+                                    tint = if (settings.isBiometricEnabled || settings.isAppLockEnabled) ElectricBlue else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    text = if (isBiometricSupported) "Biometric Lock" else "Kunci Aplikasi (PIN)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (isBiometricSupported) {
+                                        "Amankan aplikasi dengan Sidik Jari atau Face ID."
+                                    } else {
+                                        "Amankan aplikasi dengan PIN (Sensor biometrik tidak tersedia)."
+                                    },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
 
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text(
-                                text = if (isBiometricSupported) "Biometric Lock" else "Kunci Aplikasi (PIN)",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = if (isBiometricSupported) {
-                                    "Amankan aplikasi dengan Sidik Jari atau Face ID."
+                        Switch(
+                            checked = if (isBiometricSupported) settings.isBiometricEnabled else settings.isAppLockEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    if (settings.pinCode == null) {
+                                        showPinDialog = true
+                                    } else {
+                                        if (isBiometricSupported) {
+                                            viewModel.toggleBiometric(true)
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Kunci Biometrik diaktifkan")
+                                            }
+                                        } else {
+                                            viewModel.toggleBiometric(false)
+                                            viewModel.toggleAppLock(true)
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("Kunci Aplikasi (PIN) diaktifkan")
+                                            }
+                                        }
+                                    }
                                 } else {
-                                    "Amankan aplikasi dengan PIN (Sensor biometrik tidak tersedia)."
-                                },
+                                    if (isBiometricSupported) {
+                                        viewModel.toggleBiometric(false)
+                                        viewModel.toggleAppLock(false)
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("Kunci Biometrik dinonaktifkan")
+                                        }
+                                    } else {
+                                        viewModel.toggleAppLock(false)
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("Kunci Aplikasi dinonaktifkan")
+                                        }
+                                    }
+                                }
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = ElectricBlue
+                            )
+                        )
+                    }
+
+                    if (settings.isBiometricEnabled || settings.isAppLockEnabled) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                        )
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Timer,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = ElectricBlue
+                                )
+                                Text(
+                                    text = "Batas Waktu Kunci (Timeout)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            Text(
+                                text = "Kunci ulang aplikasi otomatis setelah berada di latar belakang selama:",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        }
-                    }
 
-                    Switch(
-                        checked = if (isBiometricSupported) settings.isBiometricEnabled else settings.isAppLockEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                if (settings.pinCode == null) {
-                                    showPinDialog = true
-                                } else {
-                                    if (isBiometricSupported) {
-                                        viewModel.toggleBiometric(true)
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("Kunci Biometrik diaktifkan")
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                LockTimeout.entries.forEach { timeout ->
+                                    val isSelected = settings.lockTimeoutSeconds == timeout.seconds
+                                    Surface(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .clickable {
+                                                viewModel.setLockTimeout(timeout.seconds)
+                                                scope.launch {
+                                                    snackbarHostState.showSnackbar("Timeout diatur: ${timeout.labelId}")
+                                                }
+                                            },
+                                        color = if (isSelected) ElectricBlue.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                        border = BorderStroke(
+                                            width = if (isSelected) 1.5.dp else 1.dp,
+                                            color = if (isSelected) ElectricBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                                        ),
+                                        shape = RoundedCornerShape(20.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            if (isSelected) {
+                                                Icon(
+                                                    imageVector = Icons.Default.CheckCircle,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(14.dp),
+                                                    tint = ElectricBlue
+                                                )
+                                            }
+                                            Text(
+                                                text = timeout.labelId,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) ElectricBlue else MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
                                         }
-                                    } else {
-                                        viewModel.toggleBiometric(false)
-                                        viewModel.toggleAppLock(true)
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar("Kunci Aplikasi (PIN) diaktifkan")
-                                        }
-                                    }
-                                }
-                            } else {
-                                if (isBiometricSupported) {
-                                    viewModel.toggleBiometric(false)
-                                    viewModel.toggleAppLock(false)
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("Kunci Biometrik dinonaktifkan")
-                                    }
-                                } else {
-                                    viewModel.toggleAppLock(false)
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar("Kunci Aplikasi dinonaktifkan")
                                     }
                                 }
                             }
-                        },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = ElectricBlue
-                        )
-                    )
-                }
-
-                if (settings.isBiometricEnabled || settings.isAppLockEnabled) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                    )
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Timer,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = ElectricBlue
-                            )
-                            Text(
-                                text = "Batas Waktu Kunci (Timeout)",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
                         }
 
-                        Text(
-                            text = "Kunci ulang aplikasi otomatis setelah berada di latar belakang selama:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                         )
 
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                .padding(horizontal = 14.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            LockTimeout.entries.forEach { timeout ->
-                                val isSelected = settings.lockTimeoutSeconds == timeout.seconds
-                                Surface(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .clickable {
-                                            viewModel.setLockTimeout(timeout.seconds)
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar("Timeout diatur: ${timeout.labelId}")
-                                            }
-                                        },
-                                    color = if (isSelected) ElectricBlue.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                    border = BorderStroke(
-                                        width = if (isSelected) 1.5.dp else 1.dp,
-                                        color = if (isSelected) ElectricBlue else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-                                    ),
-                                    shape = RoundedCornerShape(20.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        if (isSelected) {
-                                            Icon(
-                                                imageVector = Icons.Default.CheckCircle,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(14.dp),
-                                                tint = ElectricBlue
-                                            )
-                                        }
-                                        Text(
-                                            text = timeout.labelId,
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isSelected) ElectricBlue else MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
+                            TextButton(onClick = onNavigateToPinEntry) {
+                                Icon(
+                                    imageVector = Icons.Default.Pin,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = ElectricBlue
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Test PIN Entry",
+                                    color = ElectricBlue,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+
+                            TextButton(onClick = onNavigateToAppLock) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = ElectricBlue
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Test App Lock",
+                                    color = ElectricBlue,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelMedium
+                                )
                             }
                         }
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 14.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onNavigateToPinEntry) {
-                        Icon(
-                            imageVector = Icons.Default.Pin,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = ElectricBlue
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Test PIN Entry",
-                            color = ElectricBlue,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-
-                    TextButton(onClick = onNavigateToAppLock) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = ElectricBlue
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Test App Lock",
-                            color = ElectricBlue,
-                            fontWeight = FontWeight.SemiBold,
-                            style = MaterialTheme.typography.labelMedium
-                        )
                     }
                 }
             }

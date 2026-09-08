@@ -123,4 +123,9 @@ class CloudAuthRepositoryImpl(
         preferencesManager.saveUserSession(updatedUser)
         return Result.success(updatedUser)
     }
+
+    override suspend fun updateAvatar(avatarUri: String?): Result<Unit> {
+        preferencesManager.updateAvatarUri(avatarUri)
+        return Result.success(Unit)
+    }
 }

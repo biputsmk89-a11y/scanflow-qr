@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
@@ -35,6 +37,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Link
@@ -42,6 +45,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +54,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -135,7 +141,11 @@ class AnalyticsViewModel @Inject constructor(
 @Composable
 fun AnalyticsScreen(
     viewModel: AnalyticsViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToHistory: () -> Unit = {},
+    onNavigateToMyQr: () -> Unit = {},
+    onNavigateToScan: () -> Unit = {},
+    onNavigateToCreate: () -> Unit = {}
 ) {
     val stats by viewModel.analytics.collectAsState()
     val selectedTimeRange by viewModel.timeRange.collectAsState()
@@ -144,6 +154,7 @@ fun AnalyticsScreen(
     var showTimeRangeMenu by remember { mutableStateOf(false) }
     var showHourlyDialog by remember { mutableStateOf(false) }
     var selectedDayTooltip by remember { mutableStateOf<String?>(null) }
+    var selectedTopQr by remember { mutableStateOf<TopQrAnalyticsItem?>(null) }
 
     val timeRangeOptions = listOf(
         "7 Hari Terakhir",
@@ -157,6 +168,16 @@ fun AnalyticsScreen(
         HourlyBreakdownDialog(
             hourlyStats = stats.hourlyBreakdown,
             onDismiss = { showHourlyDialog = false }
+        )
+    }
+
+    // Top QR Detail Dialog
+    selectedTopQr?.let { qrItem ->
+        TopQrDetailDialog(
+            item = qrItem,
+            onDismiss = { selectedTopQr = null },
+            onViewAllQr = onNavigateToMyQr,
+            onViewHistory = onNavigateToHistory
         )
     }
 
@@ -280,8 +301,18 @@ fun AnalyticsScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Real-Time Live Sync Status & Interactive Onboarding Banner
+            LiveSyncStatusBanner(
+                totalScans = stats.totalScans,
+                activeQrCount = stats.activeQrCount,
+                onNavigateToScan = onNavigateToScan,
+                onNavigateToCreate = onNavigateToCreate
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
             // 1. KPI Overview (4 Cards in a 2x2 Grid - Google Stitch Design)
-            KpiOverviewGrid(stats = stats)
+            KpiOverviewGrid(stats = stats, selectedTimeRange = selectedTimeRange)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -300,7 +331,18 @@ fun AnalyticsScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // 3. QR Terpopuler (Top Performing QR Codes)
-            TopQrsSection(topQrs = stats.topQrs)
+            TopQrsSection(
+                topQrs = stats.topQrs,
+                onViewAllClick = {
+                    if (stats.activeQrCount > 0) {
+                        onNavigateToMyQr()
+                    } else {
+                        onNavigateToHistory()
+                    }
+                },
+                onNavigateToCreate = onNavigateToCreate,
+                onItemClick = { selectedTopQr = it }
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -311,7 +353,137 @@ fun AnalyticsScreen(
                 locations = stats.topLocations
             )
 
-            Spacer(modifier = Modifier.height(100.dp))
+            Spacer(modifier = Modifier.height(140.dp))
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------------------
+// REAL-TIME SYNC STATUS & ONBOARDING BANNER
+// -----------------------------------------------------------------------------------------
+@Composable
+private fun LiveSyncStatusBanner(
+    totalScans: Int,
+    activeQrCount: Int,
+    onNavigateToScan: () -> Unit,
+    onNavigateToCreate: () -> Unit
+) {
+    if (totalScans == 0 && activeQrCount == 0) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+            border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.35f))
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(9.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF00875A))
+                    )
+                    Text(
+                        text = "Sinkronisasi Real-Time Aktif (Room Database)",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ElectricBlue
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Seluruh analitik di halaman ini 100% membaca data nyata dari database lokal. Setiap kali Anda memindai barcode/QR dengan kamera atau membuat QR baru, angka dan grafik akan langsung terupdate secara real-time tanpa data gimmick.",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.outline,
+                    lineHeight = 16.sp
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = onNavigateToScan,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.QrCodeScanner,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Pindai Sekarang",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = onNavigateToCreate,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, ElectricBlue),
+                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = ElectricBlue
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Buat QR Baru",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ElectricBlue
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                .border(1.dp, Color(0xFF00875A).copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF00875A))
+                )
+                Text(
+                    text = "Data Real-Time Live",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Text(
+                text = "Tersinkronisasi otomatis Room DB",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.outline
+            )
         }
     }
 }
@@ -320,7 +492,7 @@ fun AnalyticsScreen(
 // COMPONENT 1: 4 KPI Overview Grid (2x2)
 // -----------------------------------------------------------------------------------------
 @Composable
-private fun KpiOverviewGrid(stats: AnalyticsSummary) {
+private fun KpiOverviewGrid(stats: AnalyticsSummary, selectedTimeRange: String = "Semua Waktu") {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -354,7 +526,7 @@ private fun KpiOverviewGrid(stats: AnalyticsSummary) {
                 iconTint = Color(0xFF006875),
                 iconBg = Color(0xFF006875).copy(alpha = 0.12f),
                 trendText = if (stats.uniqueVisitors > 0) "${stats.uniqueVisitors} entitas" else "0 entitas",
-                trendLabel = "tercatat",
+                trendLabel = "konten unik",
                 trendPositive = true,
                 isTrend = false
             )
@@ -365,7 +537,6 @@ private fun KpiOverviewGrid(stats: AnalyticsSummary) {
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // Card 3: QR Aktif
-            val active = stats.activeQrCount - stats.pausedQrCount.coerceAtMost(stats.activeQrCount)
             KpiCard(
                 modifier = Modifier.weight(1f),
                 title = "QR Aktif",
@@ -373,11 +544,11 @@ private fun KpiOverviewGrid(stats: AnalyticsSummary) {
                 icon = Icons.Default.Link,
                 iconTint = ElectricBlue,
                 iconBg = ElectricBlue.copy(alpha = 0.12f),
-                trendText = "$active aktif • ${stats.pausedQrCount} jeda",
+                trendText = "${stats.activeQrCount} dibuat • ${stats.totalFavorites} favorit",
                 trendLabel = "",
                 trendPositive = true,
                 isTrend = false,
-                hasGreenDot = true
+                hasGreenDot = stats.activeQrCount > 0
             )
 
             // Card 4: Rata-rata/Hari
@@ -389,7 +560,7 @@ private fun KpiOverviewGrid(stats: AnalyticsSummary) {
                 iconTint = Color(0xFF006875),
                 iconBg = Color(0xFF00E3FD).copy(alpha = 0.2f),
                 trendText = if (stats.dailyAverage > 0) "${stats.dailyAverage}/hari" else "0/hari",
-                trendLabel = "estimasi",
+                trendLabel = "pada ${selectedTimeRange.lowercase()}",
                 trendPositive = true,
                 isTrend = false
             )
@@ -600,6 +771,24 @@ private fun ScanActivityCard(
                     }
                 }
 
+                // Center Guide if no scans yet
+                if (stats.totalScans == 0) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.align(Alignment.Center)
+                    ) {
+                        Text(
+                            text = "Belum ada rekaman scan • Ketuk bar untuk rincian",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.outline,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+
                 // Bars Row
                 Row(
                     modifier = Modifier
@@ -719,11 +908,11 @@ private fun DayBarItem(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Bar Fill
+        // Bar Fill (Tactile clickable bar)
         val barHeight = if (activity.scanCount > 0) {
             (activity.heightRatio * 110).dp.coerceIn(16.dp, 120.dp)
         } else {
-            8.dp
+            10.dp
         }
         Box(
             modifier = Modifier
@@ -755,7 +944,12 @@ private fun DayBarItem(
 // COMPONENT 3: QR Terpopuler Section (Top 3 Performing QR Codes)
 // -----------------------------------------------------------------------------------------
 @Composable
-private fun TopQrsSection(topQrs: List<TopQrAnalyticsItem>) {
+private fun TopQrsSection(
+    topQrs: List<TopQrAnalyticsItem>,
+    onViewAllClick: () -> Unit,
+    onNavigateToCreate: () -> Unit,
+    onItemClick: (TopQrAnalyticsItem) -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -790,7 +984,7 @@ private fun TopQrsSection(topQrs: List<TopQrAnalyticsItem>) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .clip(RoundedCornerShape(4.dp))
-                    .clickable { }
+                    .clickable { onViewAllClick() }
                     .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
                 Text(
@@ -818,7 +1012,7 @@ private fun TopQrsSection(topQrs: List<TopQrAnalyticsItem>) {
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -835,18 +1029,43 @@ private fun TopQrsSection(topQrs: List<TopQrAnalyticsItem>) {
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Pindai atau buat QR Code baru untuk melihat performa di sini",
+                        text = "Pindai atau buat QR Code baru untuk melihat analisis performa di sini",
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.outline,
                         textAlign = TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = onNavigateToCreate,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, ElectricBlue),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = null,
+                            tint = ElectricBlue,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Buat QR Code Pertama",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ElectricBlue
+                        )
+                    }
                 }
             }
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 topQrs.take(3).forEach { item ->
-                    TopQrCardItem(item = item)
+                    TopQrCardItem(
+                        item = item,
+                        onClick = { onItemClick(item) }
+                    )
                 }
             }
         }
@@ -854,7 +1073,10 @@ private fun TopQrsSection(topQrs: List<TopQrAnalyticsItem>) {
 }
 
 @Composable
-private fun TopQrCardItem(item: TopQrAnalyticsItem) {
+private fun TopQrCardItem(
+    item: TopQrAnalyticsItem,
+    onClick: () -> Unit
+) {
     val (icon, iconTint, iconBg, barColor) = when (item.type) {
         QrType.WIFI -> Quadruple(Icons.Default.Wifi, Color(0xFF006875), Color(0xFF00E3FD).copy(alpha = 0.2f), Color(0xFF006875))
         QrType.CONTACT -> Quadruple(Icons.Default.Badge, Color(0xFF993100), Color(0xFF993100).copy(alpha = 0.12f), Color(0xFFC24100))
@@ -862,7 +1084,10 @@ private fun TopQrCardItem(item: TopQrAnalyticsItem) {
     }
 
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
@@ -1019,15 +1244,40 @@ private fun DevicesAndLocationsSection(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Segmented Bar (iOS vs Android)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(10.dp)
-                        .clip(RoundedCornerShape(5.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    if (totalScans > 0) {
+                if (totalScans == 0) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Belum ada pemindaian tercatat. Rasio Android & iOS terdeteksi otomatis dari payload tautan yang dipindai.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.outline,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                } else {
+                    // Segmented Bar (iOS vs Android)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(10.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
                         val iosFraction = (deviceStats.iosPercent / 100f).coerceIn(0f, 1f)
                         if (iosFraction > 0f) {
                             Box(
@@ -1045,69 +1295,69 @@ private fun DevicesAndLocationsSection(
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                // Legend Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                    // Legend Row
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(ElectricBlue)
-                        )
-                        Text(
-                            text = "iOS:",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                        Text(
-                            text = "${deviceStats.iosPercent}%",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "(${deviceStats.iosCount})",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(ElectricBlue)
+                            )
+                            Text(
+                                text = "iOS:",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Text(
+                                text = "${deviceStats.iosPercent}%",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "(${deviceStats.iosCount})",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF00E3FD))
-                        )
-                        Text(
-                            text = "Android:",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                        Text(
-                            text = "${deviceStats.androidPercent}%",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "(${deviceStats.androidCount})",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.outline
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF00E3FD))
+                            )
+                            Text(
+                                text = "Android:",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Text(
+                                text = "${deviceStats.androidPercent}%",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "(${deviceStats.androidCount})",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
                     }
                 }
             }
@@ -1154,44 +1404,71 @@ private fun DevicesAndLocationsSection(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    locations.forEach { loc ->
+                if (locations.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = "${loc.rank}. ${loc.cityName}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(16.dp)
                             )
+                            Text(
+                                text = "Belum ada riwayat geolokasi. Wilayah terpetakan otomatis dari pemindaian payload lokasi GPS & Wi-Fi.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.outline,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        locations.forEach { loc ->
                             Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .width(80.dp)
-                                        .height(6.dp)
-                                        .clip(RoundedCornerShape(3.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                Text(
+                                    text = "${loc.rank}. ${loc.cityName}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxWidth(fraction = loc.percent / 100f)
-                                            .fillMaxHeight()
+                                            .width(80.dp)
+                                            .height(6.dp)
                                             .clip(RoundedCornerShape(3.dp))
-                                            .background(ElectricBlue)
+                                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth(fraction = (loc.percent / 100f).coerceIn(0.05f, 1f))
+                                                .fillMaxHeight()
+                                                .clip(RoundedCornerShape(3.dp))
+                                                .background(ElectricBlue)
+                                        )
+                                    }
+                                    Text(
+                                        text = "${loc.percent}%",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-                                Text(
-                                    text = "${loc.percent}%",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
                             }
                         }
                     }
@@ -1209,6 +1486,8 @@ private fun HourlyBreakdownDialog(
     hourlyStats: List<HourlyStats>,
     onDismiss: () -> Unit
 ) {
+    val totalHourlyScans = hourlyStats.sumOf { it.scanCount }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -1233,6 +1512,33 @@ private fun HourlyBreakdownDialog(
                     .padding(vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (totalHourlyScans == 0) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Belum ada pemindaian per jam pada periode ini. Jam sibuk akan dipetakan otomatis saat pemindaian dilakukan.",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.outline,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                }
+
                 hourlyStats.forEach { item ->
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
@@ -1249,7 +1555,7 @@ private fun HourlyBreakdownDialog(
                                 text = "${item.scanCount} scan (${item.percent}%)",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = ElectricBlue
+                                color = if (item.scanCount > 0) ElectricBlue else MaterialTheme.colorScheme.outline
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
@@ -1260,13 +1566,15 @@ private fun HourlyBreakdownDialog(
                                 .clip(RoundedCornerShape(3.dp))
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth(fraction = (item.percent / 35f).coerceIn(0.05f, 1f))
-                                    .fillMaxHeight()
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(ElectricBlue)
-                            )
+                            if (item.scanCount > 0) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(fraction = (item.percent / 100f).coerceIn(0.05f, 1f))
+                                        .fillMaxHeight()
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(ElectricBlue)
+                                )
+                            }
                         }
                     }
                 }
@@ -1279,6 +1587,181 @@ private fun HourlyBreakdownDialog(
                     fontWeight = FontWeight.Bold,
                     color = ElectricBlue
                 )
+            }
+        },
+        shape = RoundedCornerShape(20.dp)
+    )
+}
+
+// -----------------------------------------------------------------------------------------
+// COMPONENT 6: Top QR Detail Dialog (Modal Detail QR Terpopuler)
+// -----------------------------------------------------------------------------------------
+@Composable
+private fun TopQrDetailDialog(
+    item: TopQrAnalyticsItem,
+    onDismiss: () -> Unit,
+    onViewAllQr: () -> Unit,
+    onViewHistory: () -> Unit = {}
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(ElectricBlue.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = null,
+                        tint = ElectricBlue,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = item.title,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "Tipe: ${item.type.displayName}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Konten Payload",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = item.subtitle,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 16.sp
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = ElectricBlue.copy(alpha = 0.1f),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Total Scan",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Text(
+                                text = "${item.scanCount}",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ElectricBlue
+                            )
+                        }
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF006875).copy(alpha = 0.1f),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Share Rasio",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                            Text(
+                                text = "${item.sharePercent}%",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF006875)
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onViewHistory()
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Text(
+                        text = "Riwayat",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Button(
+                    onClick = {
+                        onDismiss()
+                        onViewAllQr()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = "Buka QR Saya",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Tutup", color = MaterialTheme.colorScheme.outline)
             }
         },
         shape = RoundedCornerShape(20.dp)

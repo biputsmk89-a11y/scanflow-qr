@@ -171,6 +171,7 @@ class FakeSettingsRepository(
     initialSettings: com.scanflow.qr.domain.model.AppSettings = com.scanflow.qr.domain.model.AppSettings()
 ) : com.scanflow.qr.domain.repository.SettingsRepository {
     private val _settings = MutableStateFlow(initialSettings)
+    val currentSettings: com.scanflow.qr.domain.model.AppSettings get() = _settings.value
     override val settingsFlow: Flow<com.scanflow.qr.domain.model.AppSettings> = _settings.asStateFlow()
 
     override suspend fun updateThemeMode(themeMode: com.scanflow.qr.domain.model.AppThemeMode) {

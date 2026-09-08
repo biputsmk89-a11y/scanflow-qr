@@ -80,6 +80,7 @@ interface AuthRepository {
     suspend fun signInAsGuest(): AuthUser
     suspend fun signOut()
     suspend fun updateProfile(name: String, email: String): Result<AuthUser>
+    suspend fun updateAvatar(avatarUri: String?): Result<Unit>
 }
 
 interface SyncRepository {

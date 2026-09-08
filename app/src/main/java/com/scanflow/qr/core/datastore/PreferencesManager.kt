@@ -49,6 +49,7 @@ class PreferencesManager(private val context: Context) {
     private val KEY_USER_DISPLAY_NAME = stringPreferencesKey("auth_user_display_name")
     private val KEY_USER_IS_GUEST = booleanPreferencesKey("auth_user_is_guest")
     private val KEY_USER_TOKEN = stringPreferencesKey("auth_user_token")
+    private val KEY_USER_AVATAR_URI = stringPreferencesKey("auth_user_avatar_uri")
     private val KEY_LAST_SYNC_TIME = longPreferencesKey("auth_last_sync_time")
     private val KEY_USERS_REGISTRY = stringPreferencesKey("registered_users_registry")
 
@@ -79,7 +80,7 @@ class PreferencesManager(private val context: Context) {
                 autoScan = pref[KEY_AUTO_SCAN] ?: true,
                 language = pref[KEY_LANGUAGE] ?: "en",
                 saveScanHistory = pref[KEY_SAVE_SCAN_HISTORY] ?: true,
-                sendAnonymousAnalytics = pref[KEY_SEND_ANONYMOUS_ANALYTICS] ?: false,
+                sendAnonymousAnalytics = pref[KEY_SEND_ANONYMOUS_ANALYTICS] ?: true,
                 safeUrlDetection = pref[KEY_SAFE_URL_DETECTION] ?: true,
                 suspiciousQrWarning = pref[KEY_SUSPICIOUS_QR_WARNING] ?: true,
                 clipboardProtection = pref[KEY_CLIPBOARD_PROTECTION] ?: true,
@@ -190,14 +191,16 @@ class PreferencesManager(private val context: Context) {
                     email = pref[KEY_USER_EMAIL],
                     displayName = pref[KEY_USER_DISPLAY_NAME] ?: "User",
                     isGuest = pref[KEY_USER_IS_GUEST] ?: false,
-                    token = pref[KEY_USER_TOKEN]
+                    token = pref[KEY_USER_TOKEN],
+                    avatarUri = pref[KEY_USER_AVATAR_URI]
                 )
             } else {
                 AuthUser(
                     id = "local_guest_user",
                     email = null,
                     displayName = "Guest User",
-                    isGuest = true
+                    isGuest = true,
+                    avatarUri = pref[KEY_USER_AVATAR_URI]
                 )
             }
         }
@@ -209,6 +212,7 @@ class PreferencesManager(private val context: Context) {
             if (user.displayName != null) pref[KEY_USER_DISPLAY_NAME] = user.displayName else pref.remove(KEY_USER_DISPLAY_NAME)
             pref[KEY_USER_IS_GUEST] = user.isGuest
             if (user.token != null) pref[KEY_USER_TOKEN] = user.token else pref.remove(KEY_USER_TOKEN)
+            if (user.avatarUri != null) pref[KEY_USER_AVATAR_URI] = user.avatarUri else pref.remove(KEY_USER_AVATAR_URI)
         }
     }
 
@@ -218,7 +222,18 @@ class PreferencesManager(private val context: Context) {
             pref.remove(KEY_USER_EMAIL)
             pref.remove(KEY_USER_DISPLAY_NAME)
             pref.remove(KEY_USER_TOKEN)
+            pref.remove(KEY_USER_AVATAR_URI)
             pref[KEY_USER_IS_GUEST] = true
+        }
+    }
+
+    suspend fun updateAvatarUri(uri: String?) {
+        context.dataStore.edit { pref ->
+            if (uri != null) {
+                pref[KEY_USER_AVATAR_URI] = uri
+            } else {
+                pref.remove(KEY_USER_AVATAR_URI)
+            }
         }
     }
 

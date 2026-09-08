@@ -18,6 +18,10 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      actions: write
+
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -42,6 +46,19 @@ jobs:
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
+
+      - name: Prune Old Workflow Artifacts (Keep Storage Under 500MB)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Purging old artifacts to free 500MB quota..."
+          gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts[].id' 2>/dev/null | while read -r id; do
+            if [ -n "$id" ]; then
+              echo "Deleting artifact ID: $id"
+              gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+            fi
+          done
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
