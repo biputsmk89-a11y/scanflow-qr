@@ -3,7 +3,9 @@ package com.scanflow.qr.feature.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.scanflow.qr.domain.model.AnalyticsSummary
+import com.scanflow.qr.domain.model.AuthUser
 import com.scanflow.qr.domain.model.ScanHistoryItem
+import com.scanflow.qr.domain.repository.AuthRepository
 import com.scanflow.qr.domain.usecase.GetAnalyticsSummaryUseCase
 import com.scanflow.qr.domain.usecase.GetHistoryUseCase
 import com.scanflow.qr.domain.usecase.ToggleFavoriteUseCase
@@ -13,12 +15,15 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class HomeUiState(
     val recentScans: List<ScanHistoryItem> = emptyList(),
     val analytics: AnalyticsSummary = AnalyticsSummary(),
+    val avatarUri: String? = null,
+    val displayName: String? = null,
     val isLoading: Boolean = false
 )
 
@@ -26,16 +31,22 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val getHistoryUseCase: GetHistoryUseCase,
     private val getAnalyticsSummaryUseCase: GetAnalyticsSummaryUseCase,
-    private val toggleFavoriteUseCase: ToggleFavoriteUseCase
+    private val toggleFavoriteUseCase: ToggleFavoriteUseCase,
+    private val authRepository: AuthRepository? = null
 ) : ViewModel() {
+
+    private val userFlow = authRepository?.getCurrentUser() ?: flowOf(AuthUser(id = "guest"))
 
     val uiState: StateFlow<HomeUiState> = combine(
         getHistoryUseCase.getRecent(limit = 5).catch { emit(emptyList()) },
-        getAnalyticsSummaryUseCase().catch { emit(AnalyticsSummary()) }
-    ) { recent, stats ->
+        getAnalyticsSummaryUseCase().catch { emit(AnalyticsSummary()) },
+        userFlow.catch { emit(AuthUser(id = "guest")) }
+    ) { recent, stats, user ->
         HomeUiState(
             recentScans = recent,
             analytics = stats,
+            avatarUri = user.avatarUri,
+            displayName = user.displayName,
             isLoading = false
         )
     }.catch {

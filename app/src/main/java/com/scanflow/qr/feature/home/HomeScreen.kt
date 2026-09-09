@@ -20,6 +20,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.net.Uri
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import java.io.File
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddBox
 import androidx.compose.material.icons.filled.Clear
@@ -70,6 +76,11 @@ import com.scanflow.qr.core.designsystem.Dimens
 import com.scanflow.qr.core.designsystem.ElectricBlue
 import com.scanflow.qr.core.designsystem.EmptyStateView
 import com.scanflow.qr.core.designsystem.ErrorRed
+import com.scanflow.qr.core.designsystem.SoftGold
+import com.scanflow.qr.core.designsystem.SoftGoldLight
+import com.scanflow.qr.core.designsystem.SoftGoldMedium
+import com.scanflow.qr.core.designsystem.SoftGoldDark
+import com.scanflow.qr.core.designsystem.SoftGoldContainer
 import com.scanflow.qr.domain.model.QrType
 import com.scanflow.qr.domain.model.ScanHistoryItem
 import java.util.Calendar
@@ -91,11 +102,21 @@ fun HomeScreen(
     var showBarcodeDialog by remember { mutableStateOf(false) }
 
     val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val greetingText = when (currentHour) {
-        in 5..11 -> "Good Morning ☀️"
-        in 12..16 -> "Good Afternoon 🌤️"
-        else -> "Good Evening 👋"
+    val greetingTime = when (currentHour) {
+        in 5..11 -> "Selamat Pagi ☀️"
+        in 12..14 -> "Selamat Siang 🌤️"
+        in 15..17 -> "Selamat Sore 🌇"
+        else -> "Selamat Malam 👋"
     }
+    val greetingText = if (!uiState.displayName.isNullOrBlank()) {
+        val firstName = uiState.displayName?.trim()?.split(" ")?.firstOrNull() ?: uiState.displayName
+        when (currentHour) {
+            in 5..11 -> "Selamat Pagi, $firstName ☀️"
+            in 12..14 -> "Selamat Siang, $firstName 🌤️"
+            in 15..17 -> "Selamat Sore, $firstName 🌇"
+            else -> "Selamat Malam, $firstName 👋"
+        }
+    } else greetingTime
 
     val filteredScans = remember(searchQuery, uiState.recentScans) {
         if (searchQuery.isBlank()) {
@@ -131,36 +152,63 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Ready to scan?",
+                        text = "Siap untuk memindai hari ini?",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                // Avatar Icon with Stitch glow border and profile navigation
+                // Avatar Icon with precision CircleShape, soft gold luxury border, seamlessly blended with background
                 Box(
                     modifier = Modifier
                         .size(48.dp)
+                        .shadow(
+                            elevation = 3.dp,
+                            shape = CircleShape,
+                            ambientColor = SoftGold.copy(alpha = 0.25f),
+                            spotColor = SoftGoldMedium.copy(alpha = 0.35f)
+                        )
                         .clip(CircleShape)
                         .background(
-                            Brush.linearGradient(
-                                listOf(ElectricBlue.copy(alpha = 0.2f), CyanAccent.copy(alpha = 0.2f))
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    SoftGoldContainer,
+                                    MaterialTheme.colorScheme.surface
+                                )
                             )
                         )
                         .border(
-                            2.dp,
-                            Brush.linearGradient(listOf(ElectricBlue, CyanAccent)),
-                            CircleShape
+                            width = 2.dp,
+                            brush = Brush.linearGradient(
+                                listOf(SoftGoldLight, SoftGoldMedium, SoftGoldDark)
+                            ),
+                            shape = CircleShape
                         )
                         .clickable(onClick = onNavigateToProfile),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = ElectricBlue,
-                        modifier = Modifier.size(28.dp)
-                    )
+                    val avatarPath = uiState.avatarUri
+                    if (!avatarPath.isNullOrEmpty() && (File(avatarPath).exists() || avatarPath.startsWith("content://"))) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(if (avatarPath.startsWith("content://")) Uri.parse(avatarPath) else File(avatarPath))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "Foto Profil",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(2.5.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Profil",
+                            tint = SoftGoldMedium,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(Dimens.Spacing16))
@@ -176,7 +224,7 @@ fun HomeScreen(
                     .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp)),
                 placeholder = {
                     Text(
-                        text = "Search QR Codes, History...",
+                        text = "Cari kode QR, riwayat, atau tautan...",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -184,7 +232,7 @@ fun HomeScreen(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
+                        contentDescription = "Cari",
                         tint = MaterialTheme.colorScheme.outline
                     )
                 },
@@ -193,7 +241,7 @@ fun HomeScreen(
                         IconButton(onClick = { searchQuery = "" }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear",
+                                contentDescription = "Hapus",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -257,14 +305,14 @@ fun HomeScreen(
                             .align(Alignment.CenterStart)
                     ) {
                         Text(
-                            text = "Scan QR Instantly",
+                            text = "Pindai QR Instan",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Fast, secure, and reliable scanning for all formats.",
+                            text = "Cepat, aman, dan akurat untuk semua format barcode.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.85f),
                             lineHeight = 18.sp
@@ -290,7 +338,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Scan Now",
+                                text = "Pindai Sekarang",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -304,7 +352,7 @@ fun HomeScreen(
         // 4. Google Stitch Quick Actions Grid (3x2)
         item {
             Text(
-                text = "Quick Actions",
+                text = "Aksi Cepat",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -317,7 +365,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StitchActionCard(
-                    title = "Scan QR",
+                    title = "Pindai QR",
                     icon = Icons.Default.QrCodeScanner,
                     iconTint = ElectricBlue,
                     containerColor = ElectricBlue.copy(alpha = 0.12f),
@@ -325,7 +373,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "Create QR",
+                    title = "Buat QR",
                     icon = Icons.Default.AddBox,
                     iconTint = Color(0xFF0097A7),
                     containerColor = Color(0xFF00E3FD).copy(alpha = 0.15f),
@@ -333,7 +381,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "Barcode",
+                    title = "Barcode 1D",
                     icon = Icons.Default.ViewWeek,
                     iconTint = Color(0xFFE65100),
                     containerColor = Color(0xFFFF9800).copy(alpha = 0.15f),
@@ -349,7 +397,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StitchActionCard(
-                    title = "My QR",
+                    title = "QR Saya",
                     icon = Icons.Default.QrCode2,
                     iconTint = ElectricBlue,
                     containerColor = ElectricBlue.copy(alpha = 0.12f),
@@ -357,7 +405,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "History",
+                    title = "Riwayat",
                     icon = Icons.Default.History,
                     iconTint = Color(0xFF5C6BC0),
                     containerColor = Color(0xFF5C6BC0).copy(alpha = 0.15f),
@@ -365,7 +413,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "Favorites",
+                    title = "Favorit",
                     icon = Icons.Default.Favorite,
                     iconTint = ErrorRed,
                     containerColor = ErrorRed.copy(alpha = 0.15f),
@@ -384,14 +432,14 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (searchQuery.isNotBlank()) "Search Results (${filteredScans.size})" else "Recent Activity",
+                    text = if (searchQuery.isNotBlank()) "Hasil Pencarian (${filteredScans.size})" else "Aktivitas Terkini",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 TextButton(onClick = onNavigateToHistory) {
                     Text(
-                        text = "View All",
+                        text = "Lihat Semua",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = ElectricBlue
@@ -405,10 +453,10 @@ fun HomeScreen(
         if (filteredScans.isEmpty()) {
             item {
                 EmptyStateView(
-                    title = if (searchQuery.isBlank()) "No Recent Activity" else "No matching scans found",
-                    description = if (searchQuery.isBlank()) "Scan your first QR code or barcode to see it here." else "Try searching for a different keyword or URL.",
+                    title = if (searchQuery.isBlank()) "Belum Ada Aktivitas" else "Pindaian tidak ditemukan",
+                    description = if (searchQuery.isBlank()) "Pindai kode QR atau barcode pertama Anda untuk melihatnya di sini." else "Coba gunakan kata kunci atau tautan lain.",
                     icon = Icons.Default.QrCodeScanner,
-                    actionText = "Scan Now",
+                    actionText = "Pindai Sekarang",
                     onActionClick = onNavigateToScan
                 )
             }

@@ -28,7 +28,8 @@ object AppViewModelProvider {
             HomeViewModel(
                 getHistoryUseCase = container.getHistoryUseCase,
                 getAnalyticsSummaryUseCase = container.getAnalyticsSummaryUseCase,
-                toggleFavoriteUseCase = container.toggleFavoriteUseCase
+                toggleFavoriteUseCase = container.toggleFavoriteUseCase,
+                authRepository = container.authRepository
             )
         }
         initializer {

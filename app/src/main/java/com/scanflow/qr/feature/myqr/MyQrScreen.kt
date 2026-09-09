@@ -148,57 +148,6 @@ class MyQrViewModel @Inject constructor(
     private val _selectedFilterType = MutableStateFlow<QrType?>(null)
     private val _isSortNewestFirst = MutableStateFlow(true)
 
-    init {
-        viewModelScope.launch {
-            val currentList = qrRepository.getAllUserQrs().first()
-            if (currentList.isEmpty()) {
-                seedShowcaseQrs()
-            }
-        }
-    }
-
-    private suspend fun seedShowcaseQrs() {
-        val showcase = listOf(
-            UserQrCode(
-                type = QrType.WIFI,
-                title = "WiFi Kantor Utama (5G)",
-                content = "WIFI:T:WPA;S:_Office_HQ_Fast5G;P:ScanFlowSecure2023;;",
-                scanCount = 420,
-                shareCount = 15,
-                downloadCount = 10,
-                createdAt = System.currentTimeMillis() - (1000L * 60 * 60 * 24 * 5)
-            ),
-            UserQrCode(
-                type = QrType.CONTACT,
-                title = "Kartu Bisnis Digital",
-                content = "BEGIN:VCARD\nVERSION:3.0\nN:Somers;Alex;;;\nFN:Alex Somers\nTITLE:Senior Designer\nTEL:+1-555-0199\nEND:VCARD",
-                scanCount = 185,
-                shareCount = 28,
-                downloadCount = 14,
-                createdAt = System.currentTimeMillis() - (1000L * 60 * 60 * 24 * 12)
-            ),
-            UserQrCode(
-                type = QrType.PAYMENT,
-                title = "QRIS Pembayaran Klien",
-                content = "00020101021126580014ID.DOKU.WWW01189360091100000000000215ID1020000000000052045812530336054061500005802ID5911Client Pay6010JAKARTA62070703A016304",
-                scanCount = 512,
-                shareCount = 42,
-                downloadCount = 31,
-                createdAt = System.currentTimeMillis() - (1000L * 60 * 60 * 24 * 20)
-            ),
-            UserQrCode(
-                type = QrType.WEBSITE,
-                title = "Portfolio Website & CV",
-                content = "https://alexsomers.design",
-                scanCount = 311,
-                shareCount = 19,
-                downloadCount = 12,
-                createdAt = System.currentTimeMillis() - (1000L * 60 * 60 * 24 * 35)
-            )
-        )
-        showcase.forEach { qrRepository.saveUserQr(it) }
-    }
-
     val uiState: StateFlow<MyQrUiState> = combine(
         qrRepository.getAllUserQrs(),
         _searchQuery,
@@ -658,10 +607,26 @@ fun MyQrScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. 3 Stats Bento Cards in a Row (Google Stitch Design)
+            // 2. 3 Stats Bento Cards in a Row (100% Real Database Metrics)
             val totalQrCount = uiState.userQrs.size
-            val totalScanCount = uiState.userQrs.sumOf { it.scanCount }.let { if (it > 0) it else 1428 }
-            val activeQrCount = uiState.userQrs.size.let { if (it > 0) it else 11 }
+            val totalScanCount = uiState.userQrs.sumOf { it.scanCount }
+            val activeQrCount = uiState.userQrs.size
+
+            val currentMonthStart = remember {
+                java.util.Calendar.getInstance().apply {
+                    set(java.util.Calendar.DAY_OF_MONTH, 1)
+                    set(java.util.Calendar.HOUR_OF_DAY, 0)
+                    set(java.util.Calendar.MINUTE, 0)
+                    set(java.util.Calendar.SECOND, 0)
+                    set(java.util.Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            }
+            val createdThisMonth = remember(uiState.userQrs) {
+                uiState.userQrs.count { it.createdAt >= currentMonthStart }
+            }
+            val favoriteCount = remember(uiState.userQrs) {
+                uiState.userQrs.count { it.isFavorite }
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -672,10 +637,10 @@ fun MyQrScreen(
                     modifier = Modifier.weight(1f),
                     title = "Total QR",
                     value = "$totalQrCount",
-                    subtext = "+2 bulan ini",
+                    subtext = if (createdThisMonth > 0) "+$createdThisMonth bulan ini" else "0 bulan ini",
                     icon = Icons.Default.QrCode,
                     iconTint = ElectricBlue,
-                    subtextColor = SuccessGreen
+                    subtextColor = if (createdThisMonth > 0) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Card 2: Total Scan
@@ -683,10 +648,10 @@ fun MyQrScreen(
                     modifier = Modifier.weight(1f),
                     title = "Total Scan",
                     value = String.format("%,d", totalScanCount).replace(',', '.'),
-                    subtext = "+18.4% aktif",
+                    subtext = if (totalScanCount > 0) "$totalScanCount pemindaian" else "0 pemindaian",
                     icon = Icons.Default.BarChart,
                     iconTint = ElectricBlue,
-                    subtextColor = SuccessGreen
+                    subtextColor = if (totalScanCount > 0) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 // Card 3: QR Aktif
@@ -694,10 +659,10 @@ fun MyQrScreen(
                     modifier = Modifier.weight(1f),
                     title = "QR Aktif",
                     value = "$activeQrCount",
-                    subtext = "1 diarsipkan",
+                    subtext = if (favoriteCount > 0) "$favoriteCount favorit" else if (activeQrCount > 0) "$activeQrCount aktif" else "0 aktif",
                     icon = Icons.Default.CheckCircle,
                     iconTint = SuccessGreen,
-                    subtextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    subtextColor = if (activeQrCount > 0) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 

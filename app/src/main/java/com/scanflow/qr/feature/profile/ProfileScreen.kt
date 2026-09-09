@@ -2,6 +2,7 @@ package com.scanflow.qr.feature.profile
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -112,6 +113,11 @@ import com.scanflow.qr.core.designsystem.CyanAccent
 import com.scanflow.qr.core.designsystem.Dimens
 import com.scanflow.qr.core.designsystem.ElectricBlue
 import com.scanflow.qr.core.designsystem.ElectricBlueLight
+import com.scanflow.qr.core.designsystem.SoftGold
+import com.scanflow.qr.core.designsystem.SoftGoldLight
+import com.scanflow.qr.core.designsystem.SoftGoldMedium
+import com.scanflow.qr.core.designsystem.SoftGoldDark
+import com.scanflow.qr.core.designsystem.SoftGoldContainer
 import com.scanflow.qr.core.designsystem.SuccessGreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.scanflow.qr.domain.model.AppThemeMode
@@ -279,22 +285,37 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    // Avatar with Edit Badge
+                    // Avatar with Edit Badge (CircleShape with Soft Gold Luxury Ring & Background Blend)
                     Box(
-                        modifier = Modifier.size(90.dp),
+                        modifier = Modifier.size(94.dp),
                         contentAlignment = Alignment.BottomEnd
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(90.dp)
+                                .shadow(
+                                    elevation = 6.dp,
+                                    shape = CircleShape,
+                                    ambientColor = SoftGold.copy(alpha = 0.25f),
+                                    spotColor = SoftGoldMedium.copy(alpha = 0.35f)
+                                )
                                 .clip(CircleShape)
                                 .background(
-                                    Brush.linearGradient(
-                                        colors = listOf(ElectricBlueLight, ElectricBlue)
+                                    Brush.radialGradient(
+                                        colors = listOf(
+                                            SoftGoldContainer,
+                                            MaterialTheme.colorScheme.surface
+                                        )
                                     )
                                 )
-                                .clickable { showAvatarOptionsDialog = true }
-                                .shadow(8.dp, CircleShape),
+                                .border(
+                                    width = 2.5.dp,
+                                    brush = Brush.linearGradient(
+                                        listOf(SoftGoldLight, SoftGoldMedium, SoftGoldDark)
+                                    ),
+                                    shape = CircleShape
+                                )
+                                .clickable { showAvatarOptionsDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
                             val avatarPath = uiState.user.avatarUri
@@ -304,37 +325,44 @@ fun ProfileScreen(
                                         .data(if (avatarPath.startsWith("content://")) Uri.parse(avatarPath) else File(avatarPath))
                                         .crossfade(true)
                                         .build(),
-                                    contentDescription = "Profile Avatar",
+                                    contentDescription = "Foto Profil",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .fillMaxSize()
+                                        .padding(3.dp)
                                         .clip(CircleShape)
                                 )
                             } else {
                                 Icon(
                                     imageVector = Icons.Default.Person,
-                                    contentDescription = "Profile Avatar",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(48.dp)
+                                    contentDescription = "Foto Profil",
+                                    tint = SoftGoldMedium,
+                                    modifier = Modifier.size(46.dp)
                                 )
                             }
                         }
 
-                        // Pencil Edit Button
+                        // Pencil Edit Button with Soft Gold styling
                         Box(
                             modifier = Modifier
-                                .size(30.dp)
+                                .size(28.dp)
+                                .shadow(elevation = 3.dp, shape = CircleShape)
                                 .clip(CircleShape)
-                                .background(ElectricBlue)
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(SoftGoldLight, SoftGoldMedium, SoftGoldDark)
+                                    )
+                                )
+                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
                                 .clickable { showAvatarOptionsDialog = true }
-                                .padding(6.dp),
+                                .padding(5.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Profile",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                contentDescription = "Edit Foto Profil",
+                                tint = MaterialTheme.colorScheme.surface,
+                                modifier = Modifier.size(15.dp)
                             )
                         }
                     }
@@ -830,13 +858,14 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(ElectricBlue),
+                                    .background(SoftGoldContainer)
+                                    .border(1.dp, SoftGoldMedium.copy(alpha = 0.5f), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.PhotoLibrary,
                                     contentDescription = null,
-                                    tint = Color.White,
+                                    tint = SoftGoldMedium,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }

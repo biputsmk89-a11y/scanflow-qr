@@ -299,17 +299,21 @@ fun AnalyticsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = Dimens.Spacing16)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            // Real-Time Live Sync Status & Interactive Onboarding Banner
-            LiveSyncStatusBanner(
+            // Quick Actions (Pindai Sekarang & Buat QR Baru)
+            AnalyticsQuickActions(
                 totalScans = stats.totalScans,
                 activeQrCount = stats.activeQrCount,
                 onNavigateToScan = onNavigateToScan,
                 onNavigateToCreate = onNavigateToCreate
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            if (stats.totalScans == 0 && stats.activeQrCount == 0) {
+                Spacer(modifier = Modifier.height(14.dp))
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
             // 1. KPI Overview (4 Cards in a 2x2 Grid - Google Stitch Design)
             KpiOverviewGrid(stats = stats, selectedTimeRange = selectedTimeRange)
@@ -359,131 +363,76 @@ fun AnalyticsScreen(
 }
 
 // -----------------------------------------------------------------------------------------
-// REAL-TIME SYNC STATUS & ONBOARDING BANNER
+// QUICK ACTIONS (Pindai Sekarang & Buat QR Baru)
 // -----------------------------------------------------------------------------------------
 @Composable
-private fun LiveSyncStatusBanner(
+private fun AnalyticsQuickActions(
     totalScans: Int,
     activeQrCount: Int,
     onNavigateToScan: () -> Unit,
     onNavigateToCreate: () -> Unit
 ) {
     if (totalScans == 0 && activeQrCount == 0) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-            border = BorderStroke(1.dp, ElectricBlue.copy(alpha = 0.35f))
-        ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(9.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF00875A))
-                    )
-                    Text(
-                        text = "Sinkronisasi Real-Time Aktif (Room Database)",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = ElectricBlue
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "Seluruh analitik di halaman ini 100% membaca data nyata dari database lokal. Setiap kali Anda memindai barcode/QR dengan kamera atau membuat QR baru, angka dan grafik akan langsung terupdate secara real-time tanpa data gimmick.",
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.outline,
-                    lineHeight = 16.sp
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onNavigateToScan,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
-                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.QrCodeScanner,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = Color.White
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Pindai Sekarang",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
-                    OutlinedButton(
-                        onClick = onNavigateToCreate,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, ElectricBlue),
-                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = ElectricBlue
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Buat QR Baru",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ElectricBlue
-                        )
-                    }
-                }
-            }
-        }
-    } else {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-                .border(1.dp, Color(0xFF00875A).copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            Button(
+                onClick = onNavigateToScan,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ElectricBlue,
+                    contentColor = Color.White
+                ),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 4.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF00875A))
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = Color.White
                 )
+                Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Data Real-Time Live",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "Pindai Sekarang",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
-            Text(
-                text = "Tersinkronisasi otomatis Room DB",
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.outline
-            )
+
+            OutlinedButton(
+                onClick = onNavigateToCreate,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(46.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.5.dp, ElectricBlue),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = ElectricBlue
+                ),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = ElectricBlue
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = "Buat QR Baru",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ElectricBlue
+                )
+            }
         }
     }
 }
