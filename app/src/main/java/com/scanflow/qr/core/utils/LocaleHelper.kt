@@ -14,6 +14,13 @@ object LocaleHelper {
         "id" to "Bahasa Indonesia"
     )
 
+    fun getLocale(langCode: String): Locale {
+        return when (langCode.lowercase()) {
+            "id", "in" -> Locale("id")
+            else -> Locale("en")
+        }
+    }
+
     /**
      * Menerapkan bahasa pilihan ke runtime aplikasi secara menyeluruh:
      * 1. Mengubah Locale default JVM.
@@ -21,32 +28,25 @@ object LocaleHelper {
      * 3. Memperbarui Resource Configuration pada context saat ini.
      */
     fun applyLocale(context: Context, langCode: String): Context {
-        val targetLocale = Locale(langCode)
+        val targetLocale = getLocale(langCode)
         Locale.setDefault(targetLocale)
 
         val res = context.resources
         val config = Configuration(res.configuration)
-        val currentLang = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            config.locales.get(0)?.language
-        } else {
-            @Suppress("DEPRECATION")
-            config.locale?.language
-        }
-
-        if (currentLang == langCode) {
-            return context
-        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             try {
                 val localeManager = context.getSystemService(Context.LOCALE_SERVICE) as? LocaleManager
-                if (localeManager?.applicationLocales?.toLanguageTags() != langCode) {
-                    localeManager?.applicationLocales = LocaleList.forLanguageTags(langCode)
+                val currentTag = localeManager?.applicationLocales?.toLanguageTags()
+                val targetTag = if (langCode == "id") "id" else "en"
+                if (currentTag != targetTag) {
+                    localeManager?.applicationLocales = LocaleList.forLanguageTags(targetTag)
                 }
             } catch (_: Exception) {}
         }
 
         config.setLocale(targetLocale)
+        config.setLayoutDirection(targetLocale)
         @Suppress("DEPRECATION")
         res.updateConfiguration(config, res.displayMetrics)
 

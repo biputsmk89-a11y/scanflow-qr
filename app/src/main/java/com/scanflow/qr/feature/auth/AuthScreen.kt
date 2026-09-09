@@ -729,7 +729,7 @@ fun AuthScreen(
                                 clientValidationError = "Nama lengkap tidak boleh kosong."
                                 return@ScanFlowPrimaryButton
                             }
-                            if (registerEmail.isBlank() || !android.util.Patterns.EMAIL_ADDRESS.matcher(registerEmail.trim()).matches()) {
+                            if (registerEmail.isBlank() || !com.scanflow.qr.core.datastore.PreferencesManager.isValidEmail(registerEmail)) {
                                 clientValidationError = "Format alamat email tidak valid."
                                 return@ScanFlowPrimaryButton
                             }

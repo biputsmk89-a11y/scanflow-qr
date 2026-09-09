@@ -238,7 +238,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = stringResource(R.string.settings_title),
                         fontWeight = FontWeight.Bold,
                         color = ElectricBlue
                     )
@@ -266,21 +266,21 @@ fun SettingsScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Data Export") },
+                                text = { Text(stringResource(R.string.settings_data_export)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToDataExport()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Backup to Storage") },
+                                text = { Text(stringResource(R.string.settings_backup_storage)) },
                                 onClick = {
                                     showMenu = false
                                     viewModel.exportBackup(context, app)
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Restore from Backup") },
+                                text = { Text(stringResource(R.string.settings_restore_backup)) },
                                 onClick = {
                                     showMenu = false
                                     viewModel.preparePickerBypass()
@@ -288,14 +288,14 @@ fun SettingsScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("View Analytics") },
+                                text = { Text(stringResource(R.string.settings_view_analytics)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToAnalytics()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("About ScanFlow") },
+                                text = { Text(stringResource(R.string.settings_about_app)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToAbout()
@@ -357,13 +357,13 @@ fun SettingsScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Security Center",
+                                    text = stringResource(R.string.settings_security_center),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Manage your account protection",
+                                    text = stringResource(R.string.settings_security_center_sub),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -403,14 +403,14 @@ fun SettingsScreen(
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Text(
-                                    text = "Protected",
+                                    text = stringResource(R.string.settings_protected_badge),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Text(
-                                text = "All security features active",
+                                text = stringResource(R.string.settings_protected_sub),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -457,13 +457,13 @@ fun SettingsScreen(
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
-                                text = "Data Export",
+                                text = stringResource(R.string.settings_data_export),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Export History, QRs & Metrics (JSON, CSV, PDF)",
+                                text = stringResource(R.string.settings_data_export_sub),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -725,7 +725,7 @@ fun SettingsScreen(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "Scanner Settings",
+                            text = stringResource(R.string.settings_scanner_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -734,8 +734,8 @@ fun SettingsScreen(
 
                     // Auto scan toggle
                     StitchSettingToggleItem(
-                        title = "Auto scan",
-                        subtitle = "Automatically scan when a code is detected",
+                        title = stringResource(R.string.settings_auto_scan),
+                        subtitle = stringResource(R.string.settings_auto_scan_sub),
                         checked = settings.autoScan,
                         onCheckedChange = { viewModel.toggleAutoScan(it) }
                     )
@@ -744,8 +744,8 @@ fun SettingsScreen(
 
                     // Vibration toggle
                     StitchSettingToggleItem(
-                        title = "Vibration",
-                        subtitle = "Vibrate on successful scan",
+                        title = stringResource(R.string.settings_vibration),
+                        subtitle = stringResource(R.string.settings_vibration_sub),
                         checked = settings.vibrateOnScan,
                         onCheckedChange = { viewModel.toggleVibrate(it) }
                     )
@@ -754,8 +754,8 @@ fun SettingsScreen(
 
                     // Sound toggle
                     StitchSettingToggleItem(
-                        title = "Sound",
-                        subtitle = "Play sound on successful scan",
+                        title = stringResource(R.string.settings_sound),
+                        subtitle = stringResource(R.string.settings_sound_sub),
                         checked = settings.beepOnScan,
                         onCheckedChange = { viewModel.toggleBeep(it) }
                     )
@@ -785,7 +785,7 @@ fun SettingsScreen(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "Appearance",
+                            text = stringResource(R.string.settings_appearance),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -793,9 +793,9 @@ fun SettingsScreen(
                     }
 
                     listOf(
-                        AppThemeMode.SYSTEM to "System Default",
-                        AppThemeMode.LIGHT to "Light Mode",
-                        AppThemeMode.DARK to "Dark Mode"
+                        AppThemeMode.SYSTEM to stringResource(R.string.theme_system),
+                        AppThemeMode.LIGHT to stringResource(R.string.theme_light),
+                        AppThemeMode.DARK to stringResource(R.string.theme_dark)
                     ).forEach { (mode, label) ->
                         val isSelected = settings.themeMode == mode
                         Surface(
@@ -859,7 +859,7 @@ fun SettingsScreen(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "Language",
+                            text = stringResource(R.string.language_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -867,8 +867,8 @@ fun SettingsScreen(
                     }
 
                     listOf(
-                        "en" to "English",
-                        "id" to "Bahasa Indonesia"
+                        "en" to stringResource(R.string.language_en),
+                        "id" to stringResource(R.string.language_id)
                     ).forEach { (langCode, langName) ->
                         val isSelected = settings.language == langCode
                         Surface(

@@ -4,6 +4,7 @@ import com.scanflow.qr.core.datastore.PreferencesManager
 import com.scanflow.qr.domain.model.AuthUser
 import com.scanflow.qr.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 /**
@@ -33,6 +34,7 @@ class CloudAuthRepositoryImpl(
                 lastLoginAt = System.currentTimeMillis()
             )
             preferencesManager.saveUserSession(user)
+            preferencesManager.setOnboardingCompleted(true)
             return Result.success(user)
         }
 
@@ -57,6 +59,7 @@ class CloudAuthRepositoryImpl(
             lastLoginAt = System.currentTimeMillis()
         )
         preferencesManager.saveUserSession(authenticatedUser)
+        preferencesManager.setOnboardingCompleted(true)
         return Result.success(authenticatedUser)
     }
 
@@ -64,7 +67,7 @@ class CloudAuthRepositoryImpl(
         val cleanEmail = email.trim().lowercase()
         val cleanName = displayName.trim().ifEmpty { "ScanFlow Member" }
 
-        if (cleanEmail.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(cleanEmail).matches()) {
+        if (cleanEmail.isEmpty() || !PreferencesManager.isValidEmail(cleanEmail)) {
             return Result.failure(IllegalArgumentException("Format alamat email tidak valid"))
         }
         if (password.length < 6) {
@@ -88,19 +91,30 @@ class CloudAuthRepositoryImpl(
             lastLoginAt = System.currentTimeMillis()
         )
         preferencesManager.saveUserSession(newUser)
+        preferencesManager.setOnboardingCompleted(true)
         return Result.success(newUser)
     }
 
     override suspend fun signInAsGuest(): AuthUser {
+        val existingUser = try { preferencesManager.currentUserFlow.first() } catch (e: Exception) { null }
+        val displayName = if (existingUser != null && !existingUser.displayName.isNullOrBlank() && existingUser.displayName != "Guest User") {
+            existingUser.displayName
+        } else {
+            "Guest User"
+        }
+        val avatarUri = existingUser?.avatarUri
+
         val guest = AuthUser(
             id = "local_guest_user",
             email = null,
-            displayName = "Guest User",
+            displayName = displayName,
             isGuest = true,
             token = null,
-            lastLoginAt = System.currentTimeMillis()
+            lastLoginAt = System.currentTimeMillis(),
+            avatarUri = avatarUri
         )
         preferencesManager.saveUserSession(guest)
+        preferencesManager.setOnboardingCompleted(true)
         return guest
     }
 

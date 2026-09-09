@@ -5,8 +5,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -17,9 +21,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.rememberNavController
 import com.scanflow.qr.core.designsystem.ScanFlowQRTheme
@@ -96,9 +105,32 @@ class MainActivity : FragmentActivity() {
         setContent {
             val sharedImageUri by sharedImageUriState.collectAsState()
             val shortcutRoute by shortcutRouteState.collectAsState()
-            val settings by settingsRepository.settingsFlow.collectAsState(
-                initial = AppSettings()
+            val settingsState by settingsRepository.settingsFlow.collectAsState(
+                initial = null
             )
+
+            if (settingsState == null) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = Color(0xFF0B1020)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.app_logo),
+                            contentDescription = "ScanFlow QR Logo",
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(RoundedCornerShape(20.dp))
+                        )
+                    }
+                }
+                return@setContent
+            }
+
+            val settings = settingsState!!
 
             val isDarkTheme = when (settings.themeMode) {
                 AppThemeMode.DARK -> true
@@ -121,15 +153,22 @@ class MainActivity : FragmentActivity() {
 
             val isUnlocked = isUnlockedState ?: !(settings.isAppLockEnabled || settings.isBiometricEnabled)
 
-            val targetLocale = remember(settings.language) { java.util.Locale(settings.language) }
-            val localizedConfiguration = remember(targetLocale) {
-                android.content.res.Configuration(resources.configuration).apply {
+            val targetLocale = remember(settings.language) { LocaleHelper.getLocale(settings.language) }
+            val baseContext = LocalContext.current
+            val localizedContext = remember(baseContext, targetLocale) {
+                val config = android.content.res.Configuration(baseContext.resources.configuration).apply {
                     setLocale(targetLocale)
+                    setLayoutDirection(targetLocale)
                 }
+                baseContext.createConfigurationContext(config)
+            }
+            val localizedConfiguration = remember(localizedContext) {
+                localizedContext.resources.configuration
             }
 
             CompositionLocalProvider(
-                LocalConfiguration provides localizedConfiguration
+                LocalConfiguration provides localizedConfiguration,
+                LocalContext provides localizedContext
             ) {
                 ScanFlowQRTheme(
                     darkTheme = isDarkTheme,

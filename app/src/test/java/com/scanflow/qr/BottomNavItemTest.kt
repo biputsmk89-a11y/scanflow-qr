@@ -16,6 +16,7 @@ class BottomNavItemTest {
             assertNotNull("Item in BottomNavItem.items must not be null!", item)
             assertNotNull("Item route must not be null!", item.route)
             assertNotNull("Item title must not be null!", item.title)
+            assertTrue("Item titleRes must be valid resource id!", item.titleRes != 0)
             assertNotNull("Item icon must not be null!", item.icon)
             assertTrue("Route must not be empty", item.route.isNotEmpty())
         }

@@ -67,6 +67,7 @@ fun MainScreen(
                 tonalElevation = 8.dp
             ) {
                 BottomNavItem.items.filterNotNull().forEach { item ->
+                    val title = androidx.compose.ui.res.stringResource(item.titleRes)
                     if (item == BottomNavItem.Scan) {
                         // Scan Action Item (integrated within navigation bar bounds)
                         NavigationBarItem(
@@ -84,7 +85,7 @@ fun MainScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.QrCodeScanner,
-                                        contentDescription = item.title,
+                                        contentDescription = title,
                                         tint = Color.White,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -92,7 +93,7 @@ fun MainScreen(
                             },
                             label = {
                                 Text(
-                                    text = item.title,
+                                    text = title,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                     color = ElectricBlue
@@ -109,8 +110,8 @@ fun MainScreen(
                         NavigationBarItem(
                             selected = isSelected,
                             onClick = { currentTab = item.route },
-                            icon = { Icon(imageVector = item.icon, contentDescription = item.title) },
-                            label = { Text(text = item.title, style = MaterialTheme.typography.labelSmall) },
+                            icon = { Icon(imageVector = item.icon, contentDescription = title) },
+                            label = { Text(text = title, style = MaterialTheme.typography.labelSmall) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MaterialTheme.colorScheme.primary,
                                 selectedTextColor = MaterialTheme.colorScheme.primary,

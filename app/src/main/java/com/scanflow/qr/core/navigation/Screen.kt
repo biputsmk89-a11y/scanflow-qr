@@ -1,5 +1,6 @@
 package com.scanflow.qr.core.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.History
@@ -8,6 +9,7 @@ import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.scanflow.qr.R
 
 sealed class Screen(val route: String) {
     data object Splash : Screen("splash")
@@ -36,15 +38,17 @@ sealed class Screen(val route: String) {
 
 sealed class BottomNavItem(
     val route: String,
-    val title: String,
-    val icon: ImageVector
+    @StringRes val titleRes: Int,
+    val icon: ImageVector,
+    @Deprecated("Use titleRes with stringResource for dynamic localization")
+    val title: String = ""
 ) {
-    data object Home : BottomNavItem("home_tab", "Beranda", Icons.Default.Home)
-    data object Scan : BottomNavItem("scan_tab", "Pindai", Icons.Default.QrCodeScanner)
-    data object Create : BottomNavItem("create_tab", "Buat", Icons.Default.AddCircle)
-    data object Analytics : BottomNavItem("analytics_tab", "Statistik", Icons.Default.Insights)
-    data object Profile : BottomNavItem("profile_tab", "Profil", Icons.Default.Person)
-    data object History : BottomNavItem("history_tab", "Riwayat", Icons.Default.History)
+    data object Home : BottomNavItem("home_tab", R.string.nav_home, Icons.Default.Home)
+    data object Scan : BottomNavItem("scan_tab", R.string.nav_scan, Icons.Default.QrCodeScanner)
+    data object Create : BottomNavItem("create_tab", R.string.nav_create, Icons.Default.AddCircle)
+    data object Analytics : BottomNavItem("analytics_tab", R.string.nav_analytics, Icons.Default.Insights)
+    data object Profile : BottomNavItem("profile_tab", R.string.nav_profile, Icons.Default.Person)
+    data object History : BottomNavItem("history_tab", R.string.nav_history, Icons.Default.History)
 
     companion object {
         val items: List<BottomNavItem>

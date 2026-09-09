@@ -81,6 +81,8 @@ import com.scanflow.qr.core.designsystem.SoftGoldLight
 import com.scanflow.qr.core.designsystem.SoftGoldMedium
 import com.scanflow.qr.core.designsystem.SoftGoldDark
 import com.scanflow.qr.core.designsystem.SoftGoldContainer
+import com.scanflow.qr.R
+import androidx.compose.ui.res.stringResource
 import com.scanflow.qr.domain.model.QrType
 import com.scanflow.qr.domain.model.ScanHistoryItem
 import java.util.Calendar
@@ -102,21 +104,22 @@ fun HomeScreen(
     var showBarcodeDialog by remember { mutableStateOf(false) }
 
     val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val greetingTime = when (currentHour) {
-        in 5..11 -> "Selamat Pagi ☀️"
-        in 12..14 -> "Selamat Siang 🌤️"
-        in 15..17 -> "Selamat Sore 🌇"
-        else -> "Selamat Malam 👋"
-    }
     val greetingText = if (!uiState.displayName.isNullOrBlank()) {
         val firstName = uiState.displayName?.trim()?.split(" ")?.firstOrNull() ?: uiState.displayName
         when (currentHour) {
-            in 5..11 -> "Selamat Pagi, $firstName ☀️"
-            in 12..14 -> "Selamat Siang, $firstName 🌤️"
-            in 15..17 -> "Selamat Sore, $firstName 🌇"
-            else -> "Selamat Malam, $firstName 👋"
+            in 5..11 -> stringResource(R.string.greeting_morning_user, firstName ?: "")
+            in 12..14 -> stringResource(R.string.greeting_afternoon_user, firstName ?: "")
+            in 15..17 -> stringResource(R.string.greeting_evening_user, firstName ?: "")
+            else -> stringResource(R.string.greeting_night_user, firstName ?: "")
         }
-    } else greetingTime
+    } else {
+        when (currentHour) {
+            in 5..11 -> stringResource(R.string.greeting_morning)
+            in 12..14 -> stringResource(R.string.greeting_afternoon)
+            in 15..17 -> stringResource(R.string.greeting_evening)
+            else -> stringResource(R.string.greeting_night)
+        }
+    }
 
     val filteredScans = remember(searchQuery, uiState.recentScans) {
         if (searchQuery.isBlank()) {
@@ -152,7 +155,7 @@ fun HomeScreen(
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Siap untuk memindai hari ini?",
+                        text = stringResource(R.string.home_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -224,7 +227,7 @@ fun HomeScreen(
                     .shadow(elevation = 2.dp, shape = RoundedCornerShape(20.dp)),
                 placeholder = {
                     Text(
-                        text = "Cari kode QR, riwayat, atau tautan...",
+                        text = stringResource(R.string.home_search_placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -232,7 +235,7 @@ fun HomeScreen(
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Cari",
+                        contentDescription = stringResource(R.string.shortcut_scan_short),
                         tint = MaterialTheme.colorScheme.outline
                     )
                 },
@@ -241,7 +244,7 @@ fun HomeScreen(
                         IconButton(onClick = { searchQuery = "" }) {
                             Icon(
                                 imageVector = Icons.Default.Clear,
-                                contentDescription = "Hapus",
+                                contentDescription = stringResource(R.string.home_search_clear),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -305,14 +308,14 @@ fun HomeScreen(
                             .align(Alignment.CenterStart)
                     ) {
                         Text(
-                            text = "Pindai QR Instan",
+                            text = stringResource(R.string.home_hero_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Cepat, aman, dan akurat untuk semua format barcode.",
+                            text = stringResource(R.string.home_hero_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.85f),
                             lineHeight = 18.sp
@@ -338,7 +341,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Pindai Sekarang",
+                                text = stringResource(R.string.home_hero_action),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelLarge
                             )
@@ -352,7 +355,7 @@ fun HomeScreen(
         // 4. Google Stitch Quick Actions Grid (3x2)
         item {
             Text(
-                text = "Aksi Cepat",
+                text = stringResource(R.string.home_quick_actions),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
@@ -365,7 +368,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StitchActionCard(
-                    title = "Pindai QR",
+                    title = stringResource(R.string.action_scan_camera),
                     icon = Icons.Default.QrCodeScanner,
                     iconTint = ElectricBlue,
                     containerColor = ElectricBlue.copy(alpha = 0.12f),
@@ -373,7 +376,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "Buat QR",
+                    title = stringResource(R.string.action_create_qr),
                     icon = Icons.Default.AddBox,
                     iconTint = Color(0xFF0097A7),
                     containerColor = Color(0xFF00E3FD).copy(alpha = 0.15f),
@@ -381,7 +384,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "Barcode 1D",
+                    title = stringResource(R.string.action_barcode_1d),
                     icon = Icons.Default.ViewWeek,
                     iconTint = Color(0xFFE65100),
                     containerColor = Color(0xFFFF9800).copy(alpha = 0.15f),
@@ -397,7 +400,7 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 StitchActionCard(
-                    title = "QR Saya",
+                    title = stringResource(R.string.action_my_qr),
                     icon = Icons.Default.QrCode2,
                     iconTint = ElectricBlue,
                     containerColor = ElectricBlue.copy(alpha = 0.12f),
@@ -405,7 +408,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "Riwayat",
+                    title = stringResource(R.string.nav_history),
                     icon = Icons.Default.History,
                     iconTint = Color(0xFF5C6BC0),
                     containerColor = Color(0xFF5C6BC0).copy(alpha = 0.15f),
@@ -413,7 +416,7 @@ fun HomeScreen(
                     modifier = Modifier.weight(1f)
                 )
                 StitchActionCard(
-                    title = "Favorit",
+                    title = stringResource(R.string.action_favorites),
                     icon = Icons.Default.Favorite,
                     iconTint = ErrorRed,
                     containerColor = ErrorRed.copy(alpha = 0.15f),
@@ -432,14 +435,14 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (searchQuery.isNotBlank()) "Hasil Pencarian (${filteredScans.size})" else "Aktivitas Terkini",
+                    text = if (searchQuery.isNotBlank()) stringResource(R.string.home_search_results, filteredScans.size) else stringResource(R.string.home_recent_activity),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 TextButton(onClick = onNavigateToHistory) {
                     Text(
-                        text = "Lihat Semua",
+                        text = stringResource(R.string.home_see_all),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = ElectricBlue
@@ -453,10 +456,10 @@ fun HomeScreen(
         if (filteredScans.isEmpty()) {
             item {
                 EmptyStateView(
-                    title = if (searchQuery.isBlank()) "Belum Ada Aktivitas" else "Pindaian tidak ditemukan",
-                    description = if (searchQuery.isBlank()) "Pindai kode QR atau barcode pertama Anda untuk melihatnya di sini." else "Coba gunakan kata kunci atau tautan lain.",
+                    title = if (searchQuery.isBlank()) stringResource(R.string.home_empty_title) else stringResource(R.string.home_search_empty_title),
+                    description = if (searchQuery.isBlank()) stringResource(R.string.home_empty_desc) else stringResource(R.string.home_search_empty_desc),
                     icon = Icons.Default.QrCodeScanner,
-                    actionText = "Pindai Sekarang",
+                    actionText = stringResource(R.string.home_hero_action),
                     onActionClick = onNavigateToScan
                 )
             }
@@ -487,7 +490,7 @@ fun HomeScreen(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "Aksi Barcode 1D",
+                        text = stringResource(R.string.dialog_barcode_title),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -496,7 +499,7 @@ fun HomeScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Pilih tindakan yang ingin Anda lakukan untuk barcode linier (Code 128, EAN-13, UPC-A, Code 39, dll.):",
+                        text = stringResource(R.string.dialog_barcode_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -512,7 +515,7 @@ fun HomeScreen(
                     ) {
                         Icon(imageVector = Icons.Default.AddBox, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Buat Barcode Baru", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.action_create_qr), fontWeight = FontWeight.Bold)
                     }
                     OutlinedButton(
                         onClick = {
@@ -524,14 +527,14 @@ fun HomeScreen(
                     ) {
                         Icon(imageVector = Icons.Default.QrCodeScanner, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Pindai Barcode (Kamera)", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.action_scan_camera), fontWeight = FontWeight.SemiBold)
                     }
                 }
             },
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showBarcodeDialog = false }) {
-                    Text("Tutup")
+                    Text(stringResource(R.string.dialog_barcode_close))
                 }
             }
         )

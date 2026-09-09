@@ -182,7 +182,7 @@ fun ProfileScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Profil",
+                        text = stringResource(R.string.profile_title),
                         fontWeight = FontWeight.Bold,
                         color = ElectricBlue
                     )
@@ -201,49 +201,49 @@ fun ProfileScreen(
                             onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Edit Profile") },
+                                text = { Text(stringResource(R.string.dialog_edit_profile_title)) },
                                 onClick = {
                                     showMenu = false
                                     showEditProfileDialog = true
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("App Preferences") },
+                                text = { Text(stringResource(R.string.section_preferences)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToSettings()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Security Center") },
+                                text = { Text(stringResource(R.string.settings_security_center)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToSecurity()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("My Favorites") },
+                                text = { Text(stringResource(R.string.action_favorites)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToFavorites()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("My QR Vault") },
+                                text = { Text(stringResource(R.string.action_my_qr)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToMyQr()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Data Export & Backup") },
+                                text = { Text(stringResource(R.string.settings_data_export)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToDataExport()
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Help Center") },
+                                text = { Text(stringResource(R.string.profile_help_faq)) },
                                 onClick = {
                                     showMenu = false
                                     onNavigateToAbout()
@@ -475,7 +475,7 @@ fun ProfileScreen(
 
             // 2. Security & Access Section (Electric Blue border-l-4)
             StitchSectionHeader(
-                title = "Security & Access",
+                title = stringResource(R.string.section_security_access),
                 accentColor = ElectricBlue
             )
 
@@ -492,8 +492,8 @@ fun ProfileScreen(
                         icon = Icons.Default.Person,
                         iconTint = ElectricBlue,
                         iconBg = ElectricBlue.copy(alpha = 0.1f),
-                        title = "Account Details",
-                        subtitle = "Manage personal info",
+                        title = stringResource(R.string.profile_account_details),
+                        subtitle = stringResource(R.string.profile_account_details_sub),
                         onClick = { showEditProfileDialog = true }
                     )
 
@@ -504,9 +504,9 @@ fun ProfileScreen(
                         icon = Icons.Default.Security,
                         iconTint = ElectricBlue,
                         iconBg = ElectricBlue.copy(alpha = 0.1f),
-                        title = "Security",
-                        subtitle = "Passwords & authentication",
-                        trailingTag = "Safe",
+                        title = stringResource(R.string.profile_security),
+                        subtitle = stringResource(R.string.profile_security_sub),
+                        trailingTag = stringResource(R.string.profile_safe_badge),
                         onClick = onNavigateToSecurity
                     )
 
@@ -517,8 +517,8 @@ fun ProfileScreen(
                         icon = Icons.Default.Policy,
                         iconTint = ElectricBlue,
                         iconBg = ElectricBlue.copy(alpha = 0.1f),
-                        title = "Privacy",
-                        subtitle = "Data & tracking preferences",
+                        title = stringResource(R.string.profile_privacy),
+                        subtitle = stringResource(R.string.profile_privacy_sub),
                         onClick = { showPrivacyDialog = true }
                     )
                 }
@@ -526,7 +526,7 @@ fun ProfileScreen(
 
             // 3. Preferences Section (Cyan border-l-4)
             StitchSectionHeader(
-                title = "Preferences",
+                title = stringResource(R.string.section_preferences),
                 accentColor = CyanAccent
             )
 
@@ -543,8 +543,8 @@ fun ProfileScreen(
                         icon = Icons.Default.Palette,
                         iconTint = CyanAccent,
                         iconBg = CyanAccent.copy(alpha = 0.15f),
-                        title = "Appearance",
-                        subtitle = "Theme & layout",
+                        title = stringResource(R.string.profile_appearance),
+                        subtitle = stringResource(R.string.profile_appearance_sub),
                         onClick = { showThemeDialog = true }
                     )
 
@@ -555,8 +555,8 @@ fun ProfileScreen(
                         icon = Icons.Default.Notifications,
                         iconTint = CyanAccent,
                         iconBg = CyanAccent.copy(alpha = 0.15f),
-                        title = "Notifications",
-                        subtitle = "Alerts & emails",
+                        title = stringResource(R.string.profile_notifications),
+                        subtitle = stringResource(R.string.profile_notifications_sub),
                         hasSwitch = true,
                         switchChecked = uiState.isNotificationsEnabled,
                         onSwitchChange = { viewModel.toggleNotifications(it) }
@@ -569,8 +569,8 @@ fun ProfileScreen(
                         icon = Icons.Default.Language,
                         iconTint = CyanAccent,
                         iconBg = CyanAccent.copy(alpha = 0.15f),
-                        title = "Language",
-                        subtitle = if (uiState.currentLanguage == "id") "Bahasa Indonesia" else "English (US)",
+                        title = stringResource(R.string.language_title),
+                        subtitle = if (uiState.currentLanguage == "id") stringResource(R.string.language_id) else stringResource(R.string.language_en),
                         onClick = { showLanguageDialog = true }
                     )
                 }
@@ -578,7 +578,7 @@ fun ProfileScreen(
 
             // 4. Data & Support Section (Orange border-l-4)
             StitchSectionHeader(
-                title = "Data & Support",
+                title = stringResource(R.string.section_data_support),
                 accentColor = Color(0xFFE65100)
             )
 
@@ -614,14 +614,14 @@ fun ProfileScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Storage,
-                                    contentDescription = "Storage",
+                                    contentDescription = stringResource(R.string.profile_storage),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(22.dp)
                                 )
                             }
                             Column {
                                 Text(
-                                    text = "Storage",
+                                    text = stringResource(R.string.profile_storage),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -675,7 +675,7 @@ fun ProfileScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.CloudSync,
-                                    contentDescription = "Cloud Sync",
+                                    contentDescription = stringResource(R.string.profile_cloud_sync),
                                     tint = ElectricBlue,
                                     modifier = Modifier
                                         .size(22.dp)
@@ -684,7 +684,7 @@ fun ProfileScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Cloud Vault",
+                                    text = stringResource(R.string.cloud_vault_title),
                                     style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -738,7 +738,7 @@ fun ProfileScreen(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Help Center",
+                    text = stringResource(R.string.profile_help_faq),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -755,7 +755,7 @@ fun ProfileScreen(
                     onClick = { showSignOutDialog = true }
                 ) {
                     Text(
-                        text = "Log Out",
+                        text = stringResource(R.string.profile_logout),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold
@@ -776,7 +776,7 @@ fun ProfileScreen(
             onDismissRequest = { showEditProfileDialog = false },
             title = {
                 Text(
-                    text = "Edit Account Details",
+                    text = stringResource(R.string.dialog_edit_profile_title),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -786,7 +786,7 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Full Name") },
+                        label = { Text(stringResource(R.string.dialog_field_name)) },
                         leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
@@ -795,7 +795,7 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = editEmail,
                         onValueChange = { editEmail = it },
-                        label = { Text("Email Address") },
+                        label = { Text(stringResource(R.string.dialog_field_email)) },
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
@@ -812,12 +812,12 @@ fun ProfileScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
                     shape = CircleShape
                 ) {
-                    Text("Save Changes")
+                    Text(stringResource(R.string.dialog_save_changes))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEditProfileDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )
@@ -829,7 +829,7 @@ fun ProfileScreen(
             onDismissRequest = { showAvatarOptionsDialog = false },
             title = {
                 Text(
-                    text = "Foto Profil",
+                    text = stringResource(R.string.dialog_avatar_title),
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -871,13 +871,13 @@ fun ProfileScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Pilih dari Galeri HP",
+                                    text = stringResource(R.string.dialog_avatar_gallery),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Gunakan foto media dari memori perangkat",
+                                    text = stringResource(R.string.dialog_avatar_gallery_sub),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -919,13 +919,13 @@ fun ProfileScreen(
                             }
                             Column {
                                 Text(
-                                    text = "Ubah Nama & Email",
+                                    text = stringResource(R.string.dialog_avatar_edit_info),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Perbarui nama tampilan atau alamat email",
+                                    text = stringResource(R.string.dialog_avatar_edit_info_sub),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -969,13 +969,13 @@ fun ProfileScreen(
                                 }
                                 Column {
                                     Text(
-                                        text = "Hapus Foto Profil",
+                                        text = stringResource(R.string.dialog_avatar_remove),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.error
                                     )
                                     Text(
-                                        text = "Kembalikan ke ikon profil default",
+                                        text = stringResource(R.string.dialog_avatar_remove_sub),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -988,7 +988,7 @@ fun ProfileScreen(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showAvatarOptionsDialog = false }) {
-                    Text("Batal")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )
@@ -1019,13 +1019,13 @@ fun ProfileScreen(
                     }
                     Column {
                         Text(
-                            text = "Privasi & Preferensi Data",
+                            text = stringResource(R.string.dialog_privacy_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Arsitektur Zero-Knowledge & Offline-First",
+                            text = stringResource(R.string.dialog_privacy_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = SuccessGreen,
                             fontWeight = FontWeight.SemiBold
@@ -1041,7 +1041,7 @@ fun ProfileScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        text = "ScanFlow QR memegang prinsip keamanan tertinggi. Anda memiliki kendali penuh atas data dan privasi Anda:",
+                        text = stringResource(R.string.dialog_privacy_intro),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1067,13 +1067,13 @@ fun ProfileScreen(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Penyimpanan Lokal Terenkripsi",
+                                    text = stringResource(R.string.dialog_privacy_p1_title),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Riwayat pemindaian dan QR Anda disimpan di database Room lokal ponsel. Tanpa koneksi internet pun seluruh data tetap aman dan privat.",
+                                    text = stringResource(R.string.dialog_privacy_p1_sub),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1102,13 +1102,13 @@ fun ProfileScreen(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Keamanan Hardware-Backed",
+                                    text = stringResource(R.string.dialog_privacy_p2_title),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Kunci enkripsi aplikasi diisolasi di Secure Enclave / Android Keystore dengan standar enkripsi AES-256 GCM.",
+                                    text = stringResource(R.string.dialog_privacy_p2_sub),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1137,13 +1137,13 @@ fun ProfileScreen(
                             )
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "Cloud Vault End-to-End Encryption",
+                                    text = stringResource(R.string.dialog_privacy_p3_title),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text(
-                                    text = "Sinkronisasi Cloud bersifat opsional. Data yang disinkronkan dienkripsi dari ujung ke ujung sebelum ditransmisikan.",
+                                    text = stringResource(R.string.dialog_privacy_p3_sub),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -1155,7 +1155,7 @@ fun ProfileScreen(
 
                     // Live Toggles
                     Text(
-                        text = "Preferensi Kontrol Data",
+                        text = stringResource(R.string.dialog_privacy_pref_heading),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = ElectricBlue
@@ -1169,12 +1169,12 @@ fun ProfileScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Simpan Riwayat Scan",
+                                text = stringResource(R.string.dialog_privacy_history_toggle),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "Otomatis menyimpan barcode yang berhasil dipindai",
+                                text = stringResource(R.string.dialog_privacy_history_sub),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1194,12 +1194,12 @@ fun ProfileScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Kirim Analitik Anonim",
+                                text = stringResource(R.string.dialog_privacy_analytics_toggle),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "Membantu stabilitas sistem tanpa mengumpulkan data pribadi",
+                                text = stringResource(R.string.dialog_privacy_analytics_sub),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1219,12 +1219,12 @@ fun ProfileScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Perlindungan Clipboard",
+                                text = stringResource(R.string.dialog_privacy_clipboard_toggle),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "Mencegah aplikasi pihak ketiga menyadap hasil salinan QR",
+                                text = stringResource(R.string.dialog_privacy_clipboard_sub),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1251,7 +1251,7 @@ fun ProfileScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Pusat Keamanan", style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.dialog_privacy_security_center), style = MaterialTheme.typography.labelSmall)
                         }
                         OutlinedButton(
                             onClick = {
@@ -1261,7 +1261,7 @@ fun ProfileScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Ekspor Data", style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.dialog_privacy_export_data), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
@@ -1272,7 +1272,7 @@ fun ProfileScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
                     shape = CircleShape
                 ) {
-                    Text("Mengerti & Simpan")
+                    Text(stringResource(R.string.dialog_privacy_understand))
                 }
             }
         )
@@ -1282,12 +1282,12 @@ fun ProfileScreen(
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
-            title = { Text("Select Language", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_select_language), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        "en" to "English (US)",
-                        "id" to "Bahasa Indonesia"
+                        "en" to stringResource(R.string.language_en),
+                        "id" to stringResource(R.string.language_id)
                     ).forEach { (code, name) ->
                         val isSelected = uiState.currentLanguage == code
                         Surface(
@@ -1334,13 +1334,13 @@ fun ProfileScreen(
     if (showThemeDialog) {
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
-            title = { Text("Appearance & Theme", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_appearance_theme), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(
-                        AppThemeMode.SYSTEM to "System Default",
-                        AppThemeMode.LIGHT to "Light Mode",
-                        AppThemeMode.DARK to "Dark Mode"
+                        AppThemeMode.SYSTEM to stringResource(R.string.theme_system),
+                        AppThemeMode.LIGHT to stringResource(R.string.theme_light),
+                        AppThemeMode.DARK to stringResource(R.string.theme_dark)
                     ).forEach { (mode, label) ->
                         val isSelected = uiState.currentTheme == mode
                         Surface(
@@ -1387,9 +1387,9 @@ fun ProfileScreen(
     if (showSignOutDialog) {
         AlertDialog(
             onDismissRequest = { showSignOutDialog = false },
-            title = { Text("Log Out Confirmation", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.dialog_logout_title), fontWeight = FontWeight.Bold) },
             text = {
-                Text("Are you sure you want to log out from ScanFlow QR? Your local data will remain saved on this device.")
+                Text(stringResource(R.string.dialog_logout_message))
             },
             confirmButton = {
                 Button(
@@ -1400,12 +1400,12 @@ fun ProfileScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                     shape = CircleShape
                 ) {
-                    Text("Log Out")
+                    Text(stringResource(R.string.profile_logout))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.dialog_cancel))
                 }
             }
         )

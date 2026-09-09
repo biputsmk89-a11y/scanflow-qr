@@ -8,11 +8,13 @@
     <string name="nav_create">Create</string>
     <string name="nav_history">History</string>
     <string name="nav_profile">Profile</string>
+    <string name="nav_analytics">Analytics</string>
     
     <!-- Actions -->
     <string name="action_scan_camera">Scan Camera</string>
     <string name="action_scan_gallery">Scan Image</string>
     <string name="action_create_qr">Create QR</string>
+    <string name="action_barcode_1d">1D Barcode</string>
     <string name="action_my_qr">My QR Codes</string>
     <string name="action_favorites">Favorites</string>
     <string name="action_share">Share</string>
@@ -28,6 +30,102 @@
     <string name="action_save_contact">Save Contact</string>
     <string name="action_wifi_settings">Open System Wi-Fi Settings</string>
     
+    <!-- Home Screen -->
+    <string name="greeting_morning">Good Morning ☀️</string>
+    <string name="greeting_afternoon">Good Afternoon 🌤️</string>
+    <string name="greeting_evening">Good Evening 🌇</string>
+    <string name="greeting_night">Good Night 👋</string>
+    <string name="greeting_morning_user">Good Morning, %s ☀️</string>
+    <string name="greeting_afternoon_user">Good Afternoon, %s 🌤️</string>
+    <string name="greeting_evening_user">Good Evening, %s 🌇</string>
+    <string name="greeting_night_user">Good Night, %s 👋</string>
+    <string name="home_subtitle">Ready to scan today?</string>
+    <string name="home_search_placeholder">Search QR codes, history, or links…</string>
+    <string name="home_search_clear">Clear</string>
+    <string name="home_hero_title">Instant QR Scan</string>
+    <string name="home_hero_subtitle">Fast, secure, and accurate for all barcode formats.</string>
+    <string name="home_hero_action">Scan Now</string>
+    <string name="home_quick_actions">Quick Actions</string>
+    <string name="home_recent_activity">Recent Activity</string>
+    <string name="home_search_results">Search Results (%d)</string>
+    <string name="home_see_all">See All</string>
+    <string name="home_empty_title">No Recent Activity</string>
+    <string name="home_empty_desc">Scan your first QR code or barcode to see it here.</string>
+    <string name="home_search_empty_title">No Scans Found</string>
+    <string name="home_search_empty_desc">Try using a different keyword or link.</string>
+    <string name="dialog_barcode_title">Generate 1D Barcode</string>
+    <string name="dialog_barcode_subtitle">Choose format to generate</string>
+    <string name="dialog_barcode_close">Close</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_member_badge">PRO Member</string>
+    <string name="profile_guest_badge">Guest Account</string>
+    <string name="profile_stats_scans">Scans</string>
+    <string name="profile_stats_created">Created</string>
+    <string name="profile_stats_synced">Synced</string>
+    <string name="section_security_access">Security &amp; Access</string>
+    <string name="profile_account_details">Account Details</string>
+    <string name="profile_account_details_sub">Manage personal info</string>
+    <string name="profile_security">Security</string>
+    <string name="profile_security_sub">Passwords &amp; authentication</string>
+    <string name="profile_safe_badge">Safe</string>
+    <string name="profile_privacy">Privacy</string>
+    <string name="profile_privacy_sub">Data &amp; tracking preferences</string>
+    <string name="section_preferences">Preferences</string>
+    <string name="profile_appearance">Appearance</string>
+    <string name="profile_appearance_sub">Theme &amp; layout</string>
+    <string name="profile_notifications">Notifications</string>
+    <string name="profile_notifications_sub">Alerts &amp; emails</string>
+    <string name="section_data_support">Data &amp; Support</string>
+    <string name="profile_storage">Storage</string>
+    <string name="profile_storage_sub">%s used</string>
+    <string name="profile_cloud_sync">Cloud Sync</string>
+    <string name="profile_settings">Settings</string>
+    <string name="profile_settings_sub">Preferences &amp; scanner configuration</string>
+    <string name="profile_help_faq">Help &amp; FAQ</string>
+    <string name="profile_help_faq_sub">Answers &amp; troubleshooting</string>
+    <string name="profile_about">About App</string>
+    <string name="profile_about_sub">Version &amp; legal information</string>
+    <string name="profile_logout">Log Out</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_select_language">Select Language</string>
+    <string name="dialog_appearance_theme">Appearance &amp; Theme</string>
+    <string name="dialog_edit_profile_title">Edit Account Details</string>
+    <string name="dialog_field_name">Full Name</string>
+    <string name="dialog_field_email">Email Address</string>
+    <string name="dialog_save_changes">Save Changes</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_avatar_title">Profile Photo</string>
+    <string name="dialog_avatar_gallery">Choose from Gallery</string>
+    <string name="dialog_avatar_gallery_sub">Use media photo from device storage</string>
+    <string name="dialog_avatar_edit_info">Change Name &amp; Email</string>
+    <string name="dialog_avatar_edit_info_sub">Update display name or email address</string>
+    <string name="dialog_avatar_remove">Remove Profile Photo</string>
+    <string name="dialog_avatar_remove_sub">Reset to default profile avatar</string>
+    <string name="dialog_logout_title">Log Out Confirmation</string>
+    <string name="dialog_logout_message">Are you sure you want to log out from ScanFlow QR? Your local data will remain saved on this device.</string>
+    <string name="dialog_privacy_title">Privacy &amp; Data Preferences</string>
+    <string name="dialog_privacy_subtitle">Zero-Knowledge &amp; Offline-First Architecture</string>
+    <string name="dialog_privacy_intro">ScanFlow QR adheres to the highest security standards. You have full control over your data and privacy:</string>
+    <string name="dialog_privacy_p1_title">Encrypted Local Storage</string>
+    <string name="dialog_privacy_p1_sub">Your scan history and QR codes are stored locally on your device in Room DB. Without internet, your data remains secure and private.</string>
+    <string name="dialog_privacy_p2_title">Hardware-Backed Security</string>
+    <string name="dialog_privacy_p2_sub">Encryption keys are isolated in Secure Enclave / Android Keystore using AES-256 GCM encryption standards.</string>
+    <string name="dialog_privacy_p3_title">Cloud Vault End-to-End Encryption</string>
+    <string name="dialog_privacy_p3_sub">Cloud sync is completely optional. Synchronized data is end-to-end encrypted before transmission.</string>
+    <string name="dialog_privacy_pref_heading">Data Control Preferences</string>
+    <string name="dialog_privacy_history_toggle">Save Scan History</string>
+    <string name="dialog_privacy_history_sub">Automatically save successfully scanned barcodes</string>
+    <string name="dialog_privacy_analytics_toggle">Send Anonymous Analytics</string>
+    <string name="dialog_privacy_analytics_sub">Help improve stability without personal data</string>
+    <string name="dialog_privacy_clipboard_toggle">Clipboard Protection</string>
+    <string name="dialog_privacy_clipboard_sub">Protect sensitive scanned text copied to clipboard</string>
+    <string name="dialog_privacy_security_center">Security Center</string>
+    <string name="dialog_privacy_export_data">Export Data</string>
+    <string name="dialog_privacy_understand">Understood &amp; Save</string>
+
     <!-- Wi-Fi Statuses -->
     <string name="wifi_connecting">Connecting to Wi-Fi…</string>
     <string name="wifi_connected">Connected to Wi-Fi</string>
@@ -44,6 +142,25 @@
 
     <!-- Settings & Security -->
     <string name="settings_title">Settings</string>
+    <string name="settings_security_center">Security Center</string>
+    <string name="settings_security_center_sub">Manage your account protection</string>
+    <string name="settings_protected_badge">Protected</string>
+    <string name="settings_protected_sub">All security features active</string>
+    <string name="settings_data_export">Data Export</string>
+    <string name="settings_data_export_sub">Export History, QRs &amp; Metrics (JSON, CSV, PDF)</string>
+    <string name="settings_scanner_title">Scanner Settings</string>
+    <string name="settings_auto_scan">Auto scan</string>
+    <string name="settings_auto_scan_sub">Automatically scan when a code is detected</string>
+    <string name="settings_vibration">Vibration</string>
+    <string name="settings_vibration_sub">Vibrate on successful scan</string>
+    <string name="settings_sound">Sound</string>
+    <string name="settings_sound_sub">Play sound on successful scan</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_backup_storage">Backup to Storage</string>
+    <string name="settings_restore_backup">Restore from Backup</string>
+    <string name="settings_view_analytics">View Analytics</string>
+    <string name="settings_about_app">About ScanFlow</string>
+
     <string name="language_title">Language</string>
     <string name="language_en">English (US)</string>
     <string name="language_id">Bahasa Indonesia</string>

@@ -149,12 +149,12 @@ jobs:
           prerelease: false
           make_latest: true
 
-      - name: Prune Old Workflow Artifacts
+      - name: Prune Old Workflow Artifacts & Runs
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Purging old GitHub Actions artifacts to free 500MB quota..."
+          echo "=== Purging old GitHub Actions artifacts to free 500MB storage quota ==="
           gh api repos/${{ github.repository }}/actions/artifacts --paginate --jq '.artifacts[].id' 2>/dev/null | while read -r id; do
             if [ -n "$id" ]; then
               echo "Deleting artifact ID: $id"
@@ -162,21 +162,13 @@ jobs:
             fi
           done
 
-      - name: Upload Release APK Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ScanFlow-QR-v${{ steps.version_step.outputs.version }}-APK
-          path: ${{ steps.artifacts_step.outputs.apk_path }}
-          retention-days: 1
-
-      - name: Upload Release AAB Artifact
-        uses: actions/upload-artifact@v4
-        continue-on-error: true
-        with:
-          name: ScanFlow-QR-v${{ steps.version_step.outputs.version }}-AAB
-          path: ${{ steps.artifacts_step.outputs.aab_path }}
-          retention-days: 1
+          echo "=== Purging old completed workflow runs ==="
+          gh api repos/${{ github.repository }}/actions/runs --paginate --jq '.workflow_runs[] | select(.id != ${{ github.run_id }}) | .id' 2>/dev/null | head -n 30 | while read -r run_id; do
+            if [ -n "$run_id" ]; then
+              echo "Deleting old workflow run: $run_id"
+              gh api -X DELETE "repos/${{ github.repository }}/actions/runs/$run_id" || true
+            fi
+          done
 
       - name: Cleanup Keystore
         if: always()

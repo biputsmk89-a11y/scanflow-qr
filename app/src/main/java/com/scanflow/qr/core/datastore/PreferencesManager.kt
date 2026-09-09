@@ -19,10 +19,17 @@ import java.io.IOException
 
 import androidx.datastore.preferences.core.longPreferencesKey
 import com.scanflow.qr.domain.model.AuthUser
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = Constants.PREFERENCES_NAME)
 
-class PreferencesManager(private val context: Context) {
+class PreferencesManager(
+    private val context: Context? = null,
+    private val customDataStore: DataStore<Preferences>? = null
+) {
+    private val dataStore: DataStore<Preferences>
+        get() = customDataStore ?: (context?.dataStore ?: throw IllegalStateException("Context or DataStore must be provided"))
 
     private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
     private val KEY_VIBRATE = booleanPreferencesKey("vibrate_on_scan")
@@ -53,7 +60,7 @@ class PreferencesManager(private val context: Context) {
     private val KEY_LAST_SYNC_TIME = longPreferencesKey("auth_last_sync_time")
     private val KEY_USERS_REGISTRY = stringPreferencesKey("registered_users_registry")
 
-    val settingsFlow: Flow<AppSettings> = context.dataStore.data
+    val settingsFlow: Flow<AppSettings> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -89,73 +96,73 @@ class PreferencesManager(private val context: Context) {
         }
 
     suspend fun updateThemeMode(themeMode: AppThemeMode) {
-        context.dataStore.edit { pref ->
+        dataStore.edit { pref ->
             pref[KEY_THEME_MODE] = themeMode.name
         }
     }
 
     suspend fun updateVibrate(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_VIBRATE] = enabled }
+        dataStore.edit { pref -> pref[KEY_VIBRATE] = enabled }
     }
 
     suspend fun updateBeep(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_BEEP] = enabled }
+        dataStore.edit { pref -> pref[KEY_BEEP] = enabled }
     }
 
     suspend fun updateAutoOpen(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_AUTO_OPEN] = enabled }
+        dataStore.edit { pref -> pref[KEY_AUTO_OPEN] = enabled }
     }
 
     suspend fun updateAutoCopy(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_AUTO_COPY] = enabled }
+        dataStore.edit { pref -> pref[KEY_AUTO_COPY] = enabled }
     }
 
     suspend fun updateAppLock(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_APP_LOCK] = enabled }
+        dataStore.edit { pref -> pref[KEY_APP_LOCK] = enabled }
     }
 
     suspend fun updateBiometric(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_BIOMETRIC] = enabled }
+        dataStore.edit { pref -> pref[KEY_BIOMETRIC] = enabled }
     }
 
     suspend fun updateLockTimeout(seconds: Long) {
-        context.dataStore.edit { pref -> pref[KEY_LOCK_TIMEOUT] = seconds }
+        dataStore.edit { pref -> pref[KEY_LOCK_TIMEOUT] = seconds }
     }
 
     suspend fun updateDynamicColor(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_DYNAMIC_COLOR] = enabled }
+        dataStore.edit { pref -> pref[KEY_DYNAMIC_COLOR] = enabled }
     }
 
     suspend fun updateAutoScan(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_AUTO_SCAN] = enabled }
+        dataStore.edit { pref -> pref[KEY_AUTO_SCAN] = enabled }
     }
 
     suspend fun updateLanguage(lang: String) {
-        context.dataStore.edit { pref -> pref[KEY_LANGUAGE] = lang }
+        dataStore.edit { pref -> pref[KEY_LANGUAGE] = lang }
     }
 
     suspend fun updateSaveScanHistory(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_SAVE_SCAN_HISTORY] = enabled }
+        dataStore.edit { pref -> pref[KEY_SAVE_SCAN_HISTORY] = enabled }
     }
 
     suspend fun updateSendAnonymousAnalytics(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_SEND_ANONYMOUS_ANALYTICS] = enabled }
+        dataStore.edit { pref -> pref[KEY_SEND_ANONYMOUS_ANALYTICS] = enabled }
     }
 
     suspend fun updateSafeUrlDetection(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_SAFE_URL_DETECTION] = enabled }
+        dataStore.edit { pref -> pref[KEY_SAFE_URL_DETECTION] = enabled }
     }
 
     suspend fun updateSuspiciousQrWarning(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_SUSPICIOUS_QR_WARNING] = enabled }
+        dataStore.edit { pref -> pref[KEY_SUSPICIOUS_QR_WARNING] = enabled }
     }
 
     suspend fun updateClipboardProtection(enabled: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_CLIPBOARD_PROTECTION] = enabled }
+        dataStore.edit { pref -> pref[KEY_CLIPBOARD_PROTECTION] = enabled }
     }
 
     suspend fun updateProfile(displayName: String, email: String) {
-        context.dataStore.edit { pref ->
+        dataStore.edit { pref ->
             pref[KEY_USER_DISPLAY_NAME] = displayName
             pref[KEY_USER_EMAIL] = email
         }
@@ -171,17 +178,17 @@ class PreferencesManager(private val context: Context) {
     }
 
     suspend fun updatePinCode(pin: String?) {
-        context.dataStore.edit { pref ->
+        dataStore.edit { pref ->
             if (pin != null) pref[KEY_PIN_CODE] = hashPin(pin) else pref.remove(KEY_PIN_CODE)
         }
     }
 
     suspend fun setOnboardingCompleted(completed: Boolean) {
-        context.dataStore.edit { pref -> pref[KEY_ONBOARDING] = completed }
+        dataStore.edit { pref -> pref[KEY_ONBOARDING] = completed }
     }
 
     // Auth Session Management
-    val currentUserFlow: Flow<AuthUser> = context.dataStore.data
+    val currentUserFlow: Flow<AuthUser> = dataStore.data
         .catch { emit(androidx.datastore.preferences.core.emptyPreferences()) }
         .map { pref ->
             val userId = pref[KEY_USER_ID]
@@ -206,7 +213,7 @@ class PreferencesManager(private val context: Context) {
         }
 
     suspend fun saveUserSession(user: AuthUser) {
-        context.dataStore.edit { pref ->
+        dataStore.edit { pref ->
             pref[KEY_USER_ID] = user.id
             if (user.email != null) pref[KEY_USER_EMAIL] = user.email else pref.remove(KEY_USER_EMAIL)
             if (user.displayName != null) pref[KEY_USER_DISPLAY_NAME] = user.displayName else pref.remove(KEY_USER_DISPLAY_NAME)
@@ -217,7 +224,7 @@ class PreferencesManager(private val context: Context) {
     }
 
     suspend fun clearUserSession() {
-        context.dataStore.edit { pref ->
+        dataStore.edit { pref ->
             pref.remove(KEY_USER_ID)
             pref.remove(KEY_USER_EMAIL)
             pref.remove(KEY_USER_DISPLAY_NAME)
@@ -228,7 +235,7 @@ class PreferencesManager(private val context: Context) {
     }
 
     suspend fun updateAvatarUri(uri: String?) {
-        context.dataStore.edit { pref ->
+        dataStore.edit { pref ->
             if (uri != null) {
                 pref[KEY_USER_AVATAR_URI] = uri
             } else {
@@ -238,12 +245,12 @@ class PreferencesManager(private val context: Context) {
     }
 
     // Cloud Sync Tracking
-    val lastSyncTimeFlow: Flow<Long?> = context.dataStore.data
+    val lastSyncTimeFlow: Flow<Long?> = dataStore.data
         .catch { emit(androidx.datastore.preferences.core.emptyPreferences()) }
         .map { pref -> pref[KEY_LAST_SYNC_TIME] }
 
     suspend fun updateLastSyncTime(timestamp: Long) {
-        context.dataStore.edit { pref -> pref[KEY_LAST_SYNC_TIME] = timestamp }
+        dataStore.edit { pref -> pref[KEY_LAST_SYNC_TIME] = timestamp }
     }
 
     // User Registry for credential validation
@@ -253,30 +260,53 @@ class PreferencesManager(private val context: Context) {
     }
 
     suspend fun saveRegisteredCredentials(email: String, passwordHash: String, name: String) {
-        context.dataStore.edit { pref ->
+        dataStore.edit { pref ->
             val existing = pref[KEY_USERS_REGISTRY] ?: "{}"
-            val json = try { org.json.JSONObject(existing) } catch (e: Exception) { org.json.JSONObject() }
-            val userRecord = org.json.JSONObject().apply {
-                put("hash", passwordHash)
-                put("name", name)
+            val map: MutableMap<String, UserRegistryRecord> = try {
+                jsonConfig.decodeFromString<Map<String, UserRegistryRecord>>(existing).toMutableMap()
+            } catch (e: Exception) {
+                mutableMapOf()
             }
-            json.put(email.lowercase().trim(), userRecord)
-            pref[KEY_USERS_REGISTRY] = json.toString()
+            map[email.lowercase().trim()] = UserRegistryRecord(hash = passwordHash, name = name)
+            pref[KEY_USERS_REGISTRY] = jsonConfig.encodeToString(map)
         }
     }
 
     suspend fun getRegisteredUserRecord(email: String): Pair<String, String>? {
-        val pref = context.dataStore.data.first()
+        val pref = dataStore.data.first()
         val registry = pref[KEY_USERS_REGISTRY] ?: return null
         return try {
-            val json = org.json.JSONObject(registry)
-            val key = email.lowercase().trim()
-            if (json.has(key)) {
-                val record = json.getJSONObject(key)
-                record.getString("hash") to record.optString("name", "User")
-            } else null
+            val map = jsonConfig.decodeFromString<Map<String, UserRegistryRecord>>(registry)
+            val record = map[email.lowercase().trim()]
+            if (record != null) record.hash to record.name else null
         } catch (e: Exception) {
             null
         }
     }
+
+    companion object {
+        private val jsonConfig = kotlinx.serialization.json.Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
+
+        private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+
+        fun isValidEmail(email: String): Boolean {
+            val clean = email.trim()
+            if (clean.isEmpty()) return false
+            return try {
+                android.util.Patterns.EMAIL_ADDRESS?.matcher(clean)?.matches() ?: EMAIL_REGEX.matches(clean)
+            } catch (e: Throwable) {
+                EMAIL_REGEX.matches(clean)
+            }
+        }
+    }
 }
+
+@kotlinx.serialization.Serializable
+internal data class UserRegistryRecord(
+    val hash: String,
+    val name: String
+)
+

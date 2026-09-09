@@ -9,11 +9,13 @@
     <string name="nav_create">Buat</string>
     <string name="nav_history">Riwayat</string>
     <string name="nav_profile">Profil</string>
+    <string name="nav_analytics">Statistik</string>
     
     <!-- Actions -->
     <string name="action_scan_camera">Pindai Kamera</string>
     <string name="action_scan_gallery">Pindai Gambar</string>
     <string name="action_create_qr">Buat QR</string>
+    <string name="action_barcode_1d">Barcode 1D</string>
     <string name="action_my_qr">QR Saya</string>
     <string name="action_favorites">Favorit</string>
     <string name="action_share">Bagikan</string>
@@ -29,6 +31,102 @@
     <string name="action_save_contact">Simpan Kontak</string>
     <string name="action_wifi_settings">Buka Setelan Wi-Fi Sistem</string>
     
+    <!-- Home Screen -->
+    <string name="greeting_morning">Selamat Pagi ☀️</string>
+    <string name="greeting_afternoon">Selamat Siang 🌤️</string>
+    <string name="greeting_evening">Selamat Sore 🌇</string>
+    <string name="greeting_night">Selamat Malam 👋</string>
+    <string name="greeting_morning_user">Selamat Pagi, %s ☀️</string>
+    <string name="greeting_afternoon_user">Selamat Siang, %s 🌤️</string>
+    <string name="greeting_evening_user">Selamat Sore, %s 🌇</string>
+    <string name="greeting_night_user">Selamat Malam, %s 👋</string>
+    <string name="home_subtitle">Siap untuk memindai hari ini?</string>
+    <string name="home_search_placeholder">Cari kode QR, riwayat, atau tautan…</string>
+    <string name="home_search_clear">Hapus</string>
+    <string name="home_hero_title">Pindai QR Instan</string>
+    <string name="home_hero_subtitle">Cepat, aman, dan akurat untuk semua format barcode.</string>
+    <string name="home_hero_action">Pindai Sekarang</string>
+    <string name="home_quick_actions">Aksi Cepat</string>
+    <string name="home_recent_activity">Aktivitas Terkini</string>
+    <string name="home_search_results">Hasil Pencarian (%d)</string>
+    <string name="home_see_all">Lihat Semua</string>
+    <string name="home_empty_title">Belum Ada Aktivitas</string>
+    <string name="home_empty_desc">Pindai kode QR atau barcode pertama Anda untuk melihatnya di sini.</string>
+    <string name="home_search_empty_title">Pindaian Tidak Ditemukan</string>
+    <string name="home_search_empty_desc">Coba gunakan kata kunci atau tautan lain.</string>
+    <string name="dialog_barcode_title">Buat Barcode 1D</string>
+    <string name="dialog_barcode_subtitle">Pilih format barcode untuk dibuat</string>
+    <string name="dialog_barcode_close">Tutup</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Profil</string>
+    <string name="profile_member_badge">Member PRO</string>
+    <string name="profile_guest_badge">Akun Tamu</string>
+    <string name="profile_stats_scans">Pindaian</string>
+    <string name="profile_stats_created">Dibuat</string>
+    <string name="profile_stats_synced">Tersinkron</string>
+    <string name="section_security_access">Keamanan &amp; Akses</string>
+    <string name="profile_account_details">Detail Akun</string>
+    <string name="profile_account_details_sub">Kelola informasi pribadi</string>
+    <string name="profile_security">Keamanan</string>
+    <string name="profile_security_sub">Kata sandi &amp; autentikasi</string>
+    <string name="profile_safe_badge">Aman</string>
+    <string name="profile_privacy">Privasi</string>
+    <string name="profile_privacy_sub">Preferensi data &amp; pelacakan</string>
+    <string name="section_preferences">Preferensi</string>
+    <string name="profile_appearance">Tampilan</string>
+    <string name="profile_appearance_sub">Tema &amp; tata letak</string>
+    <string name="profile_notifications">Notifikasi</string>
+    <string name="profile_notifications_sub">Pemberitahuan &amp; email</string>
+    <string name="section_data_support">Data &amp; Dukungan</string>
+    <string name="profile_storage">Penyimpanan</string>
+    <string name="profile_storage_sub">%s terpakai</string>
+    <string name="profile_cloud_sync">Sinkronisasi Cloud</string>
+    <string name="profile_settings">Pengaturan</string>
+    <string name="profile_settings_sub">Preferensi &amp; konfigurasi pemindai</string>
+    <string name="profile_help_faq">Bantuan &amp; FAQ</string>
+    <string name="profile_help_faq_sub">Jawaban &amp; solusi kendala</string>
+    <string name="profile_about">Tentang Aplikasi</string>
+    <string name="profile_about_sub">Versi &amp; informasi hukum</string>
+    <string name="profile_logout">Keluar</string>
+
+    <!-- Dialogs -->
+    <string name="dialog_select_language">Pilih Bahasa</string>
+    <string name="dialog_appearance_theme">Tampilan &amp; Tema</string>
+    <string name="dialog_edit_profile_title">Ubah Detail Akun</string>
+    <string name="dialog_field_name">Nama Lengkap</string>
+    <string name="dialog_field_email">Alamat Email</string>
+    <string name="dialog_save_changes">Simpan Perubahan</string>
+    <string name="dialog_cancel">Batal</string>
+    <string name="dialog_avatar_title">Foto Profil</string>
+    <string name="dialog_avatar_gallery">Pilih dari Galeri HP</string>
+    <string name="dialog_avatar_gallery_sub">Gunakan foto media dari memori perangkat</string>
+    <string name="dialog_avatar_edit_info">Ubah Nama &amp; Email</string>
+    <string name="dialog_avatar_edit_info_sub">Perbarui nama tampilan atau alamat email</string>
+    <string name="dialog_avatar_remove">Hapus Foto Profil</string>
+    <string name="dialog_avatar_remove_sub">Kembalikan ke ikon profil default</string>
+    <string name="dialog_logout_title">Konfirmasi Keluar</string>
+    <string name="dialog_logout_message">Apakah Anda yakin ingin keluar dari ScanFlow QR? Data lokal Anda akan tetap tersimpan di perangkat ini.</string>
+    <string name="dialog_privacy_title">Privasi &amp; Preferensi Data</string>
+    <string name="dialog_privacy_subtitle">Arsitektur Zero-Knowledge &amp; Offline-First</string>
+    <string name="dialog_privacy_intro">ScanFlow QR memegang prinsip keamanan tertinggi. Anda memiliki kendali penuh atas data dan privasi Anda:</string>
+    <string name="dialog_privacy_p1_title">Penyimpanan Lokal Terenkripsi</string>
+    <string name="dialog_privacy_p1_sub">Riwayat pemindaian dan QR Anda disimpan di database Room lokal ponsel. Tanpa koneksi internet pun seluruh data tetap aman dan privat.</string>
+    <string name="dialog_privacy_p2_title">Keamanan Hardware-Backed</string>
+    <string name="dialog_privacy_p2_sub">Kunci enkripsi aplikasi diisolasi di Secure Enclave / Android Keystore dengan standar enkripsi AES-256 GCM.</string>
+    <string name="dialog_privacy_p3_title">Cloud Vault End-to-End Encryption</string>
+    <string name="dialog_privacy_p3_sub">Sinkronisasi Cloud bersifat opsional. Data yang disinkronkan dienkripsi dari ujung ke ujung sebelum ditransmisikan.</string>
+    <string name="dialog_privacy_pref_heading">Preferensi Kontrol Data</string>
+    <string name="dialog_privacy_history_toggle">Simpan Riwayat Scan</string>
+    <string name="dialog_privacy_history_sub">Otomatis menyimpan barcode yang berhasil dipindai</string>
+    <string name="dialog_privacy_analytics_toggle">Kirim Analitik Anonim</string>
+    <string name="dialog_privacy_analytics_sub">Bantu tingkatkan stabilitas tanpa data pribadi</string>
+    <string name="dialog_privacy_clipboard_toggle">Proteksi Clipboard</string>
+    <string name="dialog_privacy_clipboard_sub">Amankan teks sensitif hasil scan di papan klip</string>
+    <string name="dialog_privacy_security_center">Pusat Keamanan</string>
+    <string name="dialog_privacy_export_data">Ekspor Data</string>
+    <string name="dialog_privacy_understand">Mengerti &amp; Simpan</string>
+
     <!-- Wi-Fi Statuses -->
     <string name="wifi_connecting">Menghubungkan ke Wi-Fi…</string>
     <string name="wifi_connected">Terhubung ke Wi-Fi</string>
@@ -45,6 +143,25 @@
 
     <!-- Settings & Security -->
     <string name="settings_title">Pengaturan</string>
+    <string name="settings_security_center">Pusat Keamanan</string>
+    <string name="settings_security_center_sub">Kelola proteksi akun Anda</string>
+    <string name="settings_protected_badge">Terlindungi</string>
+    <string name="settings_protected_sub">Semua fitur keamanan aktif</string>
+    <string name="settings_data_export">Ekspor Data</string>
+    <string name="settings_data_export_sub">Ekspor Riwayat, QR &amp; Metrik (JSON, CSV, PDF)</string>
+    <string name="settings_scanner_title">Pengaturan Pemindai</string>
+    <string name="settings_auto_scan">Pindai otomatis</string>
+    <string name="settings_auto_scan_sub">Pindai otomatis saat kode terdeteksi</string>
+    <string name="settings_vibration">Getaran</string>
+    <string name="settings_vibration_sub">Bergetar saat pemindaian berhasil</string>
+    <string name="settings_sound">Suara</string>
+    <string name="settings_sound_sub">Bunyikan suara saat pemindaian berhasil</string>
+    <string name="settings_appearance">Tampilan</string>
+    <string name="settings_backup_storage">Cadangkan ke Penyimpanan</string>
+    <string name="settings_restore_backup">Pulihkan dari Cadangan</string>
+    <string name="settings_view_analytics">Lihat Analisis</string>
+    <string name="settings_about_app">Tentang ScanFlow</string>
+
     <string name="language_title">Bahasa</string>
     <string name="language_en">English (US)</string>
     <string name="language_id">Bahasa Indonesia</string>
