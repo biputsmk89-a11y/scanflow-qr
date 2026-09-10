@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
@@ -154,21 +153,15 @@ class MainActivity : FragmentActivity() {
             val isUnlocked = isUnlockedState ?: !(settings.isAppLockEnabled || settings.isBiometricEnabled)
 
             val targetLocale = remember(settings.language) { LocaleHelper.getLocale(settings.language) }
-            val baseContext = LocalContext.current
-            val localizedContext = remember(baseContext, targetLocale) {
-                val config = android.content.res.Configuration(baseContext.resources.configuration).apply {
+            val localizedConfiguration = remember(targetLocale) {
+                android.content.res.Configuration(resources.configuration).apply {
                     setLocale(targetLocale)
                     setLayoutDirection(targetLocale)
                 }
-                baseContext.createConfigurationContext(config)
-            }
-            val localizedConfiguration = remember(localizedContext) {
-                localizedContext.resources.configuration
             }
 
             CompositionLocalProvider(
-                LocalConfiguration provides localizedConfiguration,
-                LocalContext provides localizedContext
+                LocalConfiguration provides localizedConfiguration
             ) {
                 ScanFlowQRTheme(
                     darkTheme = isDarkTheme,

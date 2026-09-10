@@ -47,7 +47,7 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Prune Old Workflow Artifacts (Keep Storage Under 500MB)
+      - name: Prune Old Workflow Artifacts & Runs (Keep Storage Under 500MB)
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,6 +57,13 @@ jobs:
             if [ -n "$id" ]; then
               echo "Deleting artifact ID: $id"
               gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+            fi
+          done
+          echo "Purging old completed workflow runs..."
+          gh api repos/${{ github.repository }}/actions/runs --paginate --jq '.workflow_runs[] | select(.id != ${{ github.run_id }}) | .id' 2>/dev/null | head -n 30 | while read -r run_id; do
+            if [ -n "$run_id" ]; then
+              echo "Deleting old workflow run: $run_id"
+              gh api -X DELETE "repos/${{ github.repository }}/actions/runs/$run_id" || true
             fi
           done
 
