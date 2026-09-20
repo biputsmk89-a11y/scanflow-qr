@@ -17,14 +17,14 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.scanflow.qr"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.scanflow.qr"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 23
-        versionName = "1.2.3"
+        targetSdk = 36
+        versionCode = 24
+        versionName = "1.2.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
